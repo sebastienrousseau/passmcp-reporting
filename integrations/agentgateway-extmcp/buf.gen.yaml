@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+# SPDX-License-Identifier: Apache-2.0
+#
+# Generates gen/extmcp from proto/ext_mcp.proto. buf is the compiler and
+# the two protoc plugins run locally, so `make generate` needs Go and
+# network access to fetch them, but no protoc. The upstream go_package
+# points into agentgateway's own tree; managed mode rewrites it for this
+# module without editing the vendored proto.
+
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package
+      value: satellion.com/passmcp-reporting/integrations/agentgateway-extmcp/gen/extmcp
+plugins:
+  - local: protoc-gen-go
+    out: gen/extmcp
+    opt: paths=source_relative
+  - local: protoc-gen-go-grpc
+    out: gen/extmcp
+    opt: paths=source_relative

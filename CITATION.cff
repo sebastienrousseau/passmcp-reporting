@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+# SPDX-License-Identifier: Apache-2.0
+
+cff-version: 1.2.0
+title: "passmcp-reporting: the passmcp MCP evaluation attestation format and its offline verifier"
+message: "If you use this software, please cite it using these metadata."
+type: software
+authors:
+  - family-names: Rousseau
+    given-names: Sebastien
+    email: sebastian.rousseau@gmail.com
+repository-code: "https://github.com/sebastienrousseau/passmcp-reporting"
+abstract: >-
+  The in-toto statement passmcp writes about one Model Context Protocol
+  server — its target, what it was judged against, the verdict for every
+  check that ran, and the score — with the JSON Schema of the predicate
+  and a Go verifier that checks a statement offline. Licensed so that a
+  gateway, registry or CI system can embed it.
+keywords:
+  - model-context-protocol
+  - mcp
+  - attestation
+  - in-toto
+  - golang
+license: Apache-2.0

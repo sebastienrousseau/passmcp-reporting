@@ -1,0 +1,88 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "https://agent.example.com",
+      "digest": {
+        "sha256": "5c634f1bd99b1e26237bf70fc5142d1979561974b8a928ce3d2f03471b939781"
+      }
+    }
+  ],
+  "predicateType": "https://satellion.com/attestation/a2a-evaluation/v1",
+  "predicate": {
+    "subjectKind": "a2a-target-descriptor",
+    "target": {
+      "transport": "https",
+      "endpoint": "https://agent.example.com",
+      "agent": {
+        "name": "planner",
+        "version": "1.2.0",
+        "protocolVersion": "1.0"
+      }
+    },
+    "judgedAgainst": {
+      "protocolVersion": "1.0",
+      "rubric": "a2a-1",
+      "checkInventory": "0.0.9"
+    },
+    "instrument": {
+      "name": "passmcp",
+      "version": "0.0.9",
+      "reportSchemaVersion": 1
+    },
+    "ranAt": "2026-09-27T12:00:00Z",
+    "took": "210ms",
+    "card": {
+      "url": "https://agent.example.com/.well-known/agent-card.json",
+      "digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "signed": true,
+      "keyId": "key-1"
+    },
+    "verdicts": [
+      {
+        "id": "a2a.card_schema",
+        "phase": "card",
+        "status": "pass",
+        "evidence": [
+          "req#1"
+        ]
+      },
+      {
+        "id": "a2a.card_signature",
+        "phase": "card",
+        "status": "pass",
+        "evidence": [
+          "req#1",
+          "req#2"
+        ]
+      },
+      {
+        "id": "a2a.unauthenticated",
+        "phase": "auth",
+        "status": "fail",
+        "severity": "critical",
+        "evidence": [
+          "req#3"
+        ]
+      },
+      {
+        "id": "a2a.transport",
+        "phase": "net",
+        "status": "pass"
+      }
+    ],
+    "counts": {
+      "pass": 3,
+      "warn": 0,
+      "fail": 1,
+      "skip": 0,
+      "info": 0
+    },
+    "score": {
+      "total": 62,
+      "grade": "D",
+      "categoriesAssessed": 3,
+      "categoriesTotal": 3
+    }
+  }
+}

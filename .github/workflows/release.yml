@@ -1,0 +1,120 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+# SPDX-License-Identifier: Apache-2.0
+
+# A release of a Go module is a signed tag; the module proxy serves it. This
+# publishes the GitHub release page beside it, with the CHANGELOG section as
+# its notes, so the tag and the notes cannot disagree.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions: {}
+
+jobs:
+  release:
+    name: Publish release notes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: The tag, the changelog and the README agree
+        run: scripts/verify-release-versions.sh "${GITHUB_REF_NAME}"
+
+      - name: Notes from the changelog section
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          ver="${TAG#v}"
+          # shellcheck disable=SC2016 # awk's program is meant to be single-quoted
+          awk -v ver="$ver" '
+            $0 ~ "^## \\[" ver "\\]" { on = 1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          [ -s notes.md ] || { echo "no changelog section for $ver" >&2; exit 1; }
+          cat >> notes.md <<EOF
+
+          ---
+
+          Import the module at this version:
+
+          \`\`\`sh
+          go get satellion.com/passmcp-reporting@${TAG}
+          \`\`\`
+          EOF
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" --title "passmcp-reporting $TAG" --notes-file notes.md --verify-tag
+
+  # The agentgateway processor as a multi-arch image, pushed under the
+  # release's version and given SLSA build provenance on its digest. The image is built from
+  # the processor's directory alone, as `go install` sees the module; the
+  # Dockerfile pins both base images by digest.
+  image:
+    name: Publish the processor image
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    env:
+      IMAGE: ghcr.io/sebastienrousseau/agentgateway-extmcp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        id: push
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --tag "${IMAGE}:${TAG#v}" \
+            --label "org.opencontainers.image.version=${TAG#v}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --metadata-file "${RUNNER_TEMP}/metadata.json" \
+            --push \
+            integrations/agentgateway-extmcp
+          digest=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["containerimage.digest"])' "${RUNNER_TEMP}/metadata.json")
+          [[ "${digest}" == sha256:* ]] || { echo "::error::no image digest in the build metadata"; exit 1; }
+          echo "digest=${digest}" >> "${GITHUB_OUTPUT}"
+          echo "${IMAGE}:${TAG#v} is ${digest}"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true

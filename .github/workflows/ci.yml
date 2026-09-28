@@ -1,0 +1,250 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+# SPDX-License-Identifier: Apache-2.0
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }}, go ${{ matrix.go }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go: ["go.mod", "stable"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go from go.mod
+        if: matrix.go == 'go.mod'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Set up latest stable Go
+        if: matrix.go == 'stable'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+
+      - name: Test
+        run: go test ./... -cover
+
+  race:
+    name: Race & Shuffled Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Race detector, randomised order
+        env:
+          GOTOOLCHAIN: auto
+        run: go test -race -shuffle=on -count=1 ./...
+
+  coverage:
+    name: Coverage Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Every package at or above 85% statement coverage
+        env:
+          GOTOOLCHAIN: auto
+          THRESHOLD: '85'
+        run: |
+          set -euo pipefail
+          go test -count=1 -coverprofile=coverage.out ./... 2>&1 | tee coverage.log
+          failed=0
+          while read -r line; do
+            pkg="$(echo "${line}" | awk '{print $2}')"
+            # A package with no statements reports "[no statements]" and
+            # has nothing to gate; the failing grep must not end the loop.
+            pct="$(echo "${line}" | grep -oE 'coverage: [0-9.]+%' | grep -oE '[0-9.]+' || true)"
+            [ -z "${pct}" ] && continue
+            # The example programs have no tests; make example-check runs
+            # them instead.
+            case "${pkg}" in */examples/*) continue ;; esac
+            if awk -v p="${pct}" -v t="${THRESHOLD}" 'BEGIN { exit !(p < t) }'; then
+              echo "::error::${pkg} is at ${pct}%, below the ${THRESHOLD}% gate"
+              failed=1
+            fi
+          done < <(grep -E '^ok' coverage.log)
+          exit "${failed}"
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Formatting is canonical
+        env:
+          GOTOOLCHAIN: auto
+        run: |
+          set -euo pipefail
+          unformatted="$(gofmt -l .)"
+          if [ -n "${unformatted}" ]; then
+            echo "::error::gofmt would change:"; echo "${unformatted}"; exit 1
+          fi
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        env:
+          GOTOOLCHAIN: auto
+        with:
+          version: v2.13.2
+          args: ./...
+
+  vulncheck:
+    name: Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: govulncheck
+        env:
+          GOTOOLCHAIN: auto
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+  api-compat:
+    name: API Compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: No incompatible change against the last release
+        env:
+          GOTOOLCHAIN: auto
+        run: make api-check
+
+  checks:
+    name: Repository Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: API docs build complete, as pkgsite renders them
+        env:
+          GOTOOLCHAIN: auto
+        run: make apidoc
+      - name: The published schema matches the types
+        env:
+          GOTOOLCHAIN: auto
+        run: make spec-verify
+      - name: The example compiles and verifies the fixture
+        env:
+          GOTOOLCHAIN: auto
+        run: make example-check
+      - name: This repository's row in the family manifest is true
+        run: make family
+      - name: Version Lockstep
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make lockstep
+
+  integrations:
+    name: Integration (agentgateway-extmcp)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: integrations/agentgateway-extmcp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build, vet and test the processor
+        env:
+          GOTOOLCHAIN: auto
+        run: |
+          set -euo pipefail
+          go build ./...
+          go vet ./...
+          go test -race -shuffle=on -count=1 ./... -cover
+      - name: Installable as published
+        # go install refuses a module whose go.mod carries a replace
+        # directive, and it never sees go.work. Build the way it would:
+        # module mode, against the passmcp-reporting release go.mod requires.
+        env:
+          GOTOOLCHAIN: auto
+          GOWORK: "off"
+        run: |
+          set -euo pipefail
+          if grep -q '^replace' go.mod; then
+            echo "go.mod carries a replace directive; go install would refuse this module" >&2
+            exit 1
+          fi
+          go build ./...
+      - name: Shell completions generate and parse
+        env:
+          GOTOOLCHAIN: auto
+        run: make completions
+      - name: Container image builds, and the processor listens in it
+        run: |
+          set -euo pipefail
+          docker build --quiet --tag agentgateway-extmcp:ci .
+          docker run --detach --name extmcp --volume "$PWD/example:/etc/extmcp:ro" agentgateway-extmcp:ci >/dev/null
+          trap 'docker rm --force extmcp >/dev/null' EXIT
+          for _ in $(seq 20); do
+            logs=$(docker logs extmcp 2>&1)
+            if grep -q '"msg":"listening"' <<<"${logs}"; then echo "listening"; exit 0; fi
+            sleep 1
+          done
+          echo "the processor did not start listening in its container:" >&2
+          echo "${logs}" >&2
+          exit 1
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        env:
+          GOTOOLCHAIN: auto
+        with:
+          version: v2.13.2
+          working-directory: integrations/agentgateway-extmcp
+          args: --config ../../.golangci.yml ./...

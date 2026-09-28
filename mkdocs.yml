@@ -1,0 +1,56 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+# SPDX-License-Identifier: Apache-2.0
+
+site_name: passmcp-reporting
+site_description: The attestation format, offline verifier and schema for passmcp's evidence.
+site_url: https://sebastienrousseau.com/passmcp-reporting/
+repo_url: https://github.com/sebastienrousseau/passmcp-reporting
+repo_name: sebastienrousseau/passmcp-reporting
+edit_uri: edit/main/docs/
+docs_dir: docs
+site_dir: public
+strict: true
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Follow the system
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.highlight
+
+nav:
+  - Home: index.md
+  - The format: format.md
+  - Verifying a statement: verify.md
+  - The A2A evaluation: a2a.md
+  - The security graph: graph.md
+  - Benchmarks: BENCHMARKS.md
+  - Decision records:
+      - Index: adr/README.md
+      - 0001 The verifier in its own module: adr/0001-verifier-in-its-own-module.md

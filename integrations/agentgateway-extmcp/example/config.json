@@ -1,0 +1,20 @@
+{
+  "targets": {
+    "github": {
+      "attestation": "https://attestations.example.com/github-mcp.intoto.json",
+      "endpoint": "https://api.githubcopilot.com/mcp/",
+      "transport": "http"
+    },
+    "everything": {
+      "attestation": "./everything.statement.json",
+      "endpoint": "http://localhost:3001/mcp",
+      "transport": "http"
+    }
+  },
+  "policy": {
+    "minScore": 70,
+    "denyFailIn": ["auth", "protocol"],
+    "requireAttestation": true
+  },
+  "passthroughMethods": ["initialize", "ping"]
+}

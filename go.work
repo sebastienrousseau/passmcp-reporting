@@ -1,0 +1,13 @@
+// SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+// SPDX-License-Identifier: Apache-2.0
+
+// The agentgateway processor builds against the verifier in this checkout,
+// at the same commit, whenever it is built from the tree. A workspace does
+// that without a replace directive in the processor's go.mod, which go
+// install refuses; go.work is never part of a published module.
+go 1.26.8
+
+use (
+	.
+	./integrations/agentgateway-extmcp
+)
