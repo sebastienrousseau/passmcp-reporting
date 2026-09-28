@@ -21,8 +21,14 @@ auth=()
 # that shape reads as download-then-run to a supply-chain scanner.
 release=$(mktemp)
 trap 'rm -f "$release"' EXIT
-curl -fsSL "${auth[@]}" -H "Accept: application/vnd.github+json" "$api" -o "$release"
-theirs=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["tag_name"].lstrip("v"))' "$release")
+code=$(curl -sSL "${auth[@]}" -H "Accept: application/vnd.github+json" -w '%{http_code}' "$api" -o "$release")
+case "$code" in
+  200) theirs=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["tag_name"].lstrip("v"))' "$release") ;;
+  # No release yet: this repository tags first, so its first version is the
+  # only one allowed, the release after a notional 0.0.0.
+  404) theirs=0.0.0 ;;
+  *) echo "lockstep: reading passmcp's latest release returned HTTP $code" >&2; exit 1 ;;
+esac
 
 IFS=. read -r a b c <<<"$theirs"
 next="$a.$b.$((c + 1))"
