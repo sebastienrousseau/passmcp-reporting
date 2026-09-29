@@ -5,15 +5,13 @@ name: Manual
 
 # Builds the manual on every change to it, strictly, so a broken link or
 # nav entry fails the pull request rather than the reader; and deploys it
-# to GitHub Pages from main.
+# to GitHub Pages from main, with the coverage.json endpoint the README's
+# coverage badge reads. Every push to main redeploys, because any code
+# change can move the coverage figure.
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'docs/**'
-      - 'mkdocs.yml'
-      - '.github/workflows/manual.yml'
   pull_request:
     branches: [main]
     paths:
@@ -55,6 +53,19 @@ jobs:
           python3 -m pip install --quiet --disable-pip-version-check \
             --require-hashes -r docs/requirements.txt
           mkdocs build --strict --site-dir public
+
+      - name: Set up Go from go.mod
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      # The same measurement as CI's coverage gate: statement coverage of
+      # the root module, the example programs excluded because
+      # make example-check runs them instead of tests.
+      - name: Publish the coverage endpoint
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: make coverage-badge BADGE=public/coverage.json
 
       - name: Upload the site for Pages
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'

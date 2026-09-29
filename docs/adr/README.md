@@ -15,3 +15,4 @@ This directory records what is decided here.
 | # | Decision | Status |
 |---|---|---|
 | [0001](0001-verifier-in-its-own-module.md) | The verifier is its own module; the rubric and the renderers stay in passmcp until a consumer needs them | Accepted |
+| [0002](0002-processor-nested-module-via-go-work.md) | The agentgateway processor is a nested module, built from the tree through `go.work` and installed against the tagged release | Accepted |

@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 # SPDX-License-Identifier: Apache-2.0
 
-.PHONY: all build test test-race coverage vet lint format spdx-check spec spec-verify readme-check \
-        example-check integrations lockstep family api-check apidoc help name-guard
+.PHONY: all build test test-race coverage coverage-badge vet lint format spdx-check spec spec-verify readme-check \
+        example-check integrations lockstep family api-check apidoc help name-guard release-versions
 
 # Every gate CI runs, in the order the cheap ones fail first.
 all: format vet lint spdx-check spec-verify example-check test integrations
@@ -20,6 +20,14 @@ test-race:
 coverage:
 	go test -count=1 -coverprofile=coverage.out ./...
 	go tool cover -func=coverage.out | tail -1
+
+# The shields.io endpoint the README's coverage badge reads, measured the
+# way the Coverage Gate measures (example programs excluded). The Manual
+# workflow publishes it to GitHub Pages from main.
+BADGE ?= coverage.json
+coverage-badge:
+	go test -count=1 -coverprofile=coverage.out ./...
+	go run ./scripts/coveragebadge -profile coverage.out -exclude /examples/ > $(BADGE)
 
 vet:
 	go vet ./...
@@ -65,6 +73,10 @@ integrations:
 	# Shell completions generate from the flag set and parse.
 	$(MAKE) -C integrations/agentgateway-extmcp completions
 
+# Every version-bearing place agrees with the newest CHANGELOG heading.
+release-versions:
+	scripts/verify-release-versions.sh "v$$(grep -Eo '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | head -1 | tr -d '#[] ')"
+
 # This repository carries passmcp's version. See docs/ecosystem.md in passmcp.
 lockstep:
 	scripts/lockstep.sh
@@ -90,7 +102,7 @@ api-check:
 	echo "api-check: no incompatible change against $$tag"
 
 help:
-	@printf '%s\n' "targets: all build test test-race coverage vet lint format spdx-check spec spec-verify example-check integrations lockstep family api-check"
+	@printf '%s\n' "targets: all build test test-race coverage coverage-badge vet lint format spdx-check spec spec-verify example-check integrations lockstep family api-check apidoc readme-check name-guard release-versions"
 
 # The project was renamed to passmcp: the old name may appear only in the
 # provenance line (scripts/name-guard.sh).

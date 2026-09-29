@@ -51,4 +51,22 @@ fi
 tokens=$(sed 's/`[^`]*`//g' <<<"${outside_code}" | grep -oE '\{\{ *[A-Z][A-Z0-9_]* *\}\}' || true)
 [ -z "${tokens}" ] || { echo "readme-check: unresolved template variables: ${tokens}" >&2; exit 1; }
 
+# The family badge row: seven shields.io badges in one order and one style,
+# and the toolchain badge states go.mod's floor.
+badges=$(grep -E '^  <a href="[^"]*"><img src="https://img\.shields\.io/' "${readme}" || true)
+alts=$(sed -n 's/.* alt="\([^"]*\)".*/\1/p' <<<"${badges}" | sed 's/:.*//; s/^Go .*/Go/')
+want_alts=$(printf '%s\n' Build Coverage Release Docs 'OpenSSF Scorecard' License Go)
+if [ "${alts}" != "${want_alts}" ]; then
+  echo "readme-check: the badge row is not Build, Coverage, Release, Docs, OpenSSF Scorecard, License, Go:" >&2
+  diff <(echo "${want_alts}") <(echo "${alts}") >&2 || true
+  exit 1
+fi
+if grep -v 'style=for-the-badge' <<<"${badges}" >&2; then
+  echo "readme-check: every badge uses style=for-the-badge" >&2; exit 1
+fi
+floor=$(sed -n 's/^go \([0-9.]*\)$/\1/p' go.mod)
+grep -q "img.shields.io/badge/go-${floor}%2B-" <<<"${badges}" || {
+  echo "readme-check: the toolchain badge does not state go.mod's floor, ${floor}" >&2; exit 1
+}
+
 echo "readme-check: ${readme} follows the template (${project})"
