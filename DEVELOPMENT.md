@@ -8,11 +8,11 @@ reproduce every CI gate locally, and how a release is cut. If a gate fails
 in CI and you cannot reproduce it from this file, that is a bug in this
 file.
 
-## Toolchain
+## Requirements
 
 | Tool | Version | Why |
 |---|---|---|
-| Go | as pinned by the `go` directive in `go.mod` | `GOTOOLCHAIN=auto` downloads it; CI never pins a version separately |
+| Go | 1.26.8 or later, the `go` directive in `go.mod` | `GOTOOLCHAIN=auto` downloads it; CI tests on it and on latest stable, and never pins a version separately |
 | make | any | Task runner for everything below |
 
 Optional, only for the gate that uses it: `golangci-lint` (`make lint`),
@@ -22,6 +22,11 @@ Optional, only for the gate that uses it: `golangci-lint` (`make lint`),
 There is no dependency to download: `go.mod` has no `require` directive,
 and keeping it that way is a rule, not a coincidence.
 
+The README's toolchain badge states the same floor, and
+`scripts/readme-check.sh` fails when the two disagree. A
+[devcontainer](.devcontainer/devcontainer.json) boots to a working
+`make build test` with the linter CI pins.
+
 ## Reproducing every CI gate
 
 | CI job | Local command |
@@ -30,15 +35,33 @@ and keeping it that way is a rule, not a coincidence.
 | Race & Shuffled Tests | `make test-race` |
 | Coverage Gate (85% per package) | `make coverage` |
 | Lint | `gofmt -l .` and `make lint` |
-| Vulnerability Scan | `go run golang.org/x/vuln/cmd/govulncheck@latest ./...` |
+| Vulnerability Scan | `go run golang.org/x/vuln/cmd/govulncheck@latest ./...`, and again in `integrations/agentgateway-extmcp` with `GOWORK=off` |
 | API Compatibility | `make api-check` |
-| Repository Checks | `make spec-verify example-check family lockstep` |
+| Repository Checks | `make apidoc spec-verify example-check release-versions family lockstep` |
 | Licence Headers | `make spdx-check` |
-| Markdown & Spelling | `markdownlint-cli2 '**/*.md'` and `codespell` |
+| Markdown & Spelling | `make readme-check`, `markdownlint-cli2 '**/*.md'` and `codespell` |
+| OpenSSF Scorecard (push to main, weekly) | not reproducible locally; results on [scorecard.dev](https://scorecard.dev/viewer/?uri=github.com/sebastienrousseau/passmcp-reporting) |
 | Link Check | `lychee --offline --include-fragments '**/*.md'` |
 | DCO check | `git log --format=%B origin/main.. \| grep Signed-off-by` |
 
 `make` with no target runs the cheap gates in the order they fail fastest.
+
+## Coverage
+
+The gate is 85% statement coverage in every package with statements
+(the example programs excepted: `make example-check` runs them). The
+README's coverage badge is the root module's statement coverage measured
+the same way: on every push to main the Manual workflow runs
+`make coverage-badge`, which writes the shields.io endpoint document
+`coverage.json` with `scripts/coveragebadge`, and deploys it with the
+manual to <https://sebastienrousseau.com/passmcp-reporting/coverage.json>.
+The badge is brightgreen at 90% and above, green from the 85% gate,
+yellow from 70% and red below. The nested processor module is gated by
+its own CI job and is not in this figure.
+
+```sh
+make coverage-badge   # writes coverage.json; the figure CI publishes
+```
 
 ## Generated artefacts
 
@@ -63,15 +86,23 @@ The version is passmcp's. A release is cut when passmcp's is, on a
 `feat/vX.Y.Z` branch, and because passmcp imports this module **this
 repository tags first**:
 
-1. Move the `## [Unreleased]` entries under a `## [X.Y.Z] — date` heading
-   in `CHANGELOG.md` and update the install snippet in `README.md`.
+1. Date the `## [X.Y.Z]` heading in `CHANGELOG.md` (`## [X.Y.Z] — date`),
+   set `date-released` in `CITATION.cff`, and check the install snippets
+   in `README.md` and the processor's README, the README's family
+   sentence and `docs/releases/vX.Y.Z.md` name the version.
 2. `make lockstep` — the version is passmcp's latest release or the next.
-3. `scripts/verify-release-versions.sh vX.Y.Z`.
+3. `make release-versions` (`scripts/verify-release-versions.sh vX.Y.Z`).
 4. Push a signed annotated tag `vX.Y.Z` with the message
    `passmcp-reporting vX.Y.Z`. The release workflow publishes the changelog
-   section as the release notes; the module proxy serves the tag.
-5. Read the tag and the release page back from GitHub before calling it
-   done.
+   section as the release notes and the processor's image; the module
+   proxy serves the tag.
+5. Tag the processor `integrations/agentgateway-extmcp/vX.Y.Z` with the
+   message `agentgateway-extmcp vX.Y.Z`. Its `go.mod` requires a released
+   root version; moving it to `vX.Y.Z`, when it needs the new verifier,
+   is a commit after step 4
+   ([ADR 0002](docs/adr/0002-processor-nested-module-via-go-work.md)).
+6. Read the tags and the release pages back from GitHub before calling
+   it done.
 
 ## Conventions
 

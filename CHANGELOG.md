@@ -13,6 +13,45 @@ a passmcp release, whatever changed in this tree, and a release here with
 nothing in it is the version rule working. Because passmcp imports this
 module, this repository tags first.
 
+## [0.0.2]
+
+The family's second release. Nothing a consumer imports changed: the
+`attestation`, `a2a`, `graph` and `spec` packages, the schemas and the
+predicates are the 0.0.1 ones, and `Validate` accepts exactly what it
+accepted.
+
+### Changed
+
+- **The agentgateway processor requires the released verifier.** Its
+  `go.mod` names `satellion.com/passmcp-reporting v0.0.1` instead of a
+  pseudo-version of an untagged commit, and
+  `scripts/verify-release-versions.sh` fails when it names a
+  pseudo-version or a release newer than the one being cut
+  ([ADR 0002](docs/adr/0002-processor-nested-module-via-go-work.md)).
+- **The processor's gRPC moves to v1.83.2, clearing GO-2026-6443**
+  (CVE-2026-84445): a client that omits the `:authority` and `Host`
+  headers could panic the processor's gRPC server. v1.84.0 has no fixed
+  release; v1.83.2 is the fixed release on the line before it. CI now
+  runs govulncheck on the processor module too, which `./...` from the
+  root never reached.
+- **`make family` accepts the family standard's status names.** The
+  manifest's `released` counts as `shipping` did, and both are accepted
+  while passmcp's main still serves the earlier manifest.
+- **Every version-bearing place is checked on every pull request.** CI
+  runs `make release-versions`, which now also covers the release notes,
+  `CITATION.cff` and the README's family sentence.
+
+### Added
+
+- **A coverage badge measured by CI.** `make coverage-badge` writes the
+  shields.io endpoint document from the cover profile, and the Manual
+  workflow publishes it with the manual on every push to main.
+- **An OpenSSF Scorecard workflow and a devcontainer** that boots to a
+  working `make build test` with the linter CI pins.
+- **The architecture overview in the manual**, moved to
+  `docs/ARCHITECTURE.md`, and ADR 0002 recording why the processor is a
+  nested module.
+
 ## [0.0.1] — 2026-09-29
 
 The first release.

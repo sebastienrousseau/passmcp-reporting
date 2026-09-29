@@ -9,6 +9,8 @@ authors:
   - family-names: Rousseau
     given-names: Sebastien
     email: sebastian.rousseau@gmail.com
+# date-released is set to the tag date when this version is released.
+version: 0.0.2
 repository-code: "https://github.com/sebastienrousseau/passmcp-reporting"
 abstract: >-
   The in-toto statement passmcp writes about one Model Context Protocol

@@ -48,7 +48,7 @@ An [in-toto](https://in-toto.io) Statement whose predicate type is
 digest of the endpoint and transport passmcp evaluated. Its predicate
 carries the instrument (passmcp's version), the time, the protocol
 revision, every verdict with its phase and status, the score with its
-rubric version, and the recorded run plan. [docs/format.md](docs/format.md)
+rubric version, and the recorded run plan. [The format](format.md)
 is the full description.
 
 ## How verification works
@@ -68,7 +68,7 @@ bytes ──► Parse ──► Covers(transport, endpoint) ──► your polic
 Everything is offline and deterministic. Signature verification is not
 here: verify the DSSE envelope with the tooling you already trust
 (cosign, in-toto) and hand the payload to `Parse`.
-[docs/verify.md](docs/verify.md) walks through it.
+[Verifying a statement](verify.md) walks through it.
 
 ## The agentgateway processor
 

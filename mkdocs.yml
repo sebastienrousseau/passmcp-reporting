@@ -46,6 +46,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Architecture: ARCHITECTURE.md
   - The format: format.md
   - Verifying a statement: verify.md
   - The A2A evaluation: a2a.md
@@ -54,3 +55,4 @@ nav:
   - Decision records:
       - Index: adr/README.md
       - 0001 The verifier in its own module: adr/0001-verifier-in-its-own-module.md
+      - 0002 The processor as a nested module: adr/0002-processor-nested-module-via-go-work.md

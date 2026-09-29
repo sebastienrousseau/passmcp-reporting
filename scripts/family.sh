@@ -41,10 +41,15 @@ fi
 if [ "$lockstep" != "true" ] || [ ! -x scripts/lockstep.sh ]; then
   echo "family: the manifest says lockstep=$lockstep and this repository carries passmcp's version" >&2; fail=1
 fi
-if [ "$status" != "shipping" ]; then
-  # The row flips to shipping in the passmcp release that first depends on
-  # this module; until then the facts above are what can be checked.
-  echo "::warning::family: the manifest still lists passmcp-reporting as $status"
-fi
+case "$status" in
+  # `released` is the family standard's name (ecosystem.json schema_version
+  # 2); `shipping` is the same status in the schema_version 1 manifest that
+  # passmcp's main serves until its 0.0.2 release. Accept both until then.
+  released | shipping) ;;
+  # A row that is not released yet is not wrong about this tree; the facts
+  # above are what can be checked until the passmcp release that first
+  # depends on this module flips it.
+  *) echo "::warning::family: the manifest lists passmcp-reporting as $status, not released" ;;
+esac
 [ "$fail" -eq 0 ] && echo "family: the manifest's row for passmcp-reporting is true of this tree ($licence, $language, lockstep=$lockstep, $status)"
 exit "$fail"

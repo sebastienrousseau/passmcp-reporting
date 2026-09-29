@@ -12,12 +12,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/sebastienrousseau/passmcp-reporting/actions"><img src="https://img.shields.io/github/actions/workflow/status/sebastienrousseau/passmcp-reporting/ci.yml?style=for-the-badge&logo=github" alt="Build Status" /></a>
-  <a href="https://pkg.go.dev/satellion.com/passmcp-reporting"><img src="https://img.shields.io/badge/go.dev-reference-007d9c?style=for-the-badge&logo=go&logoColor=white" alt="Go Reference" /></a>
-  <a href="https://pkg.go.dev/satellion.com/passmcp-reporting/attestation"><img src="https://img.shields.io/badge/docs-attestation-brightgreen?style=for-the-badge&logo=go&logoColor=white" alt="Documentation" /></a>
-  <a href="https://scorecard.dev/viewer/?uri=satellion.com/passmcp-reporting"><img src="https://img.shields.io/ossf-scorecard/satellion.com/passmcp-reporting?style=for-the-badge&label=OpenSSF%20Scorecard&logo=openssf" alt="OpenSSF Scorecard" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue?style=for-the-badge" alt="License: Apache-2.0" /></a>
-  <a href="#requirements"><img src="https://img.shields.io/github/go-mod/go-version/sebastienrousseau/passmcp-reporting?style=for-the-badge&logo=go&logoColor=white&label=Go" alt="Minimum Go version" /></a>
+  <a href="https://github.com/sebastienrousseau/passmcp-reporting/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/sebastienrousseau/passmcp-reporting/ci.yml?branch=main&style=for-the-badge&logo=github&label=Build" alt="Build" /></a>
+  <a href="https://github.com/sebastienrousseau/passmcp-reporting/blob/main/DEVELOPMENT.md#coverage"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fsebastienrousseau.com%2Fpassmcp-reporting%2Fcoverage.json&style=for-the-badge&logo=codecov&logoColor=white" alt="Coverage" /></a>
+  <a href="https://github.com/sebastienrousseau/passmcp-reporting/releases"><img src="https://img.shields.io/github/v/release/sebastienrousseau/passmcp-reporting?style=for-the-badge&color=fc8d62&logo=github&label=Release" alt="Release" /></a>
+  <a href="https://pkg.go.dev/satellion.com/passmcp-reporting"><img src="https://img.shields.io/badge/go.dev-reference-007d9c?style=for-the-badge&labelColor=555555&logo=go&logoColor=white" alt="Docs" /></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/sebastienrousseau/passmcp-reporting"><img src="https://img.shields.io/ossf-scorecard/github.com/sebastienrousseau/passmcp-reporting?style=for-the-badge&label=OpenSSF%20Scorecard&logo=openssf" alt="OpenSSF Scorecard" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg?style=for-the-badge" alt="License: Apache-2.0" /></a>
+  <a href="https://github.com/sebastienrousseau/passmcp-reporting/blob/main/DEVELOPMENT.md#requirements"><img src="https://img.shields.io/badge/go-1.26.8%2B-93450a.svg?style=for-the-badge&logo=go" alt="Go 1.26.8+" /></a>
 </p>
 
 ---
@@ -32,7 +33,7 @@
 
 **The passmcp-reporting ecosystem**
 
-- [The passmcp-reporting ecosystem](#the-passmcp-reporting-ecosystem) — `passmcp`, `passmcp-reporting`, `passmcp-action`, `passmcp-server`, `passmcp-lsp`, `passmcp-census` at a glance
+- [The passmcp-reporting ecosystem](#the-passmcp-reporting-ecosystem) — `passmcp`, `passmcp-reporting`, `passmcp-server`, `passmcp-action`, `passmcp-graph`, `passmcp-registry`, `passmcp-lsp`, `passmcp-census` and `satellion.com` at a glance
 
 **Library reference**
 
@@ -59,7 +60,7 @@
 ### As a Go library
 
 ```sh
-go get satellion.com/passmcp-reporting@v0.0.1
+go get satellion.com/passmcp-reporting@v0.0.2
 ```
 
 The module has no dependencies: adding it adds one line to `go.sum`.
@@ -131,23 +132,19 @@ it, and checking the signature, is the envelope's job — see
 
 ## The passmcp-reporting ecosystem
 
-One engine, three surfaces, five satellites. This repository is the
-licence boundary: the part of passmcp other people's software imports.
+Every component is released at **0.0.2** and moves in lockstep: one version across the family, released together ([docs/ecosystem.md](https://github.com/sebastienrousseau/passmcp/blob/main/docs/ecosystem.md)).
 
 | Component | Purpose | Use case |
 | :--- | :--- | :--- |
-| [`passmcp`](https://github.com/sebastienrousseau/passmcp) | The engine, every check, and the CLI, TUI and web surfaces (GPL-3.0-only) | Evaluate a server and write the statement |
-| **`passmcp-reporting`** | The attestation format, its schema and the offline verifier (Apache-2.0) | Gate on a statement in a gateway, registry or pipeline |
-| [`passmcp-action`](https://github.com/sebastienrousseau/passmcp-action) | The GitHub Action and GitLab template wrapping the published image by digest (Apache-2.0) | Run passmcp in CI without installing it |
-| `passmcp-server` | passmcp's diagnostics as MCP tools (planned) | Evaluate a server from inside an editor |
-| `passmcp-lsp` | A language server over MCP artefacts (planned) | Hover a check id for its remediation |
-| `passmcp-census` | The published reliability census (planned) | Reproduce the numbers |
-
-The family manifest lives in passmcp at
-[`docs/ecosystem.md`](https://github.com/sebastienrousseau/passmcp/blob/main/docs/ecosystem.md);
-`make family` checks this repository's row against it. Every lockstep
-repository carries passmcp's version, and this one tags first because passmcp
-imports it.
+| [passmcp](https://github.com/sebastienrousseau/passmcp) | The MCP server diagnostic: checks in nine phases, every finding tied to the request that showed it, signed attestations | Test a server before your agents trust it, and gate it in CI |
+| [passmcp-reporting](https://github.com/sebastienrousseau/passmcp-reporting) | The attestation format, its JSON Schemas and offline verifier, the graph model, and the agentgateway processor | Verify an attestation in a gateway, registry or pipeline |
+| [passmcp-server](https://github.com/sebastienrousseau/passmcp-server) | passmcp's diagnostics as read-only MCP tools | Evaluate a server, or check an attestation, from inside the agent |
+| [passmcp-action](https://github.com/sebastienrousseau/passmcp-action) | passmcp in GitHub Actions and GitLab CI, the image pinned by digest | Fail a build on the findings you choose |
+| [passmcp-graph](https://github.com/sebastienrousseau/passmcp-graph) | A local graph of agents, servers, tools and identities built from attestations | Find inherited risk and over-privilege, and gate on policy |
+| [passmcp-registry](https://github.com/sebastienrousseau/passmcp-registry) | A signed public scorecard of the MCP Registry's remote servers | Check a public server's standing before connecting to it |
+| [passmcp-lsp](https://github.com/sebastienrousseau/passmcp-lsp) | A language server for MCP artefacts, with check-id hover from the guidance catalogue | Catch mistakes in server.json, tool schemas and client configuration while editing |
+| [passmcp-census](https://github.com/sebastienrousseau/passmcp-census) | The published reliability census: dataset, methodology, disclosure log and reproduction command | Cite ecosystem-wide reliability figures, and reproduce them |
+| [satellion.com](https://github.com/sebastienrousseau/satellion.github.io) | The website, the Go module paths and the format URIs | Read the manual, and resolve `satellion.com/...` imports |
 
 ---
 
@@ -155,17 +152,19 @@ imports it.
 
 | Area | Capability | Status |
 | :--- | :--- | :--- |
-| Read | `Parse` an in-toto v1 Statement carrying the `mcp-evaluation/v1` predicate | Stable |
-| Integrity | `Validate` recomputes the subject digest from the target descriptor and checks every required field | Stable |
-| Scope | `Covers(transport, endpoint)` says whether a statement is about a given target | Stable |
-| Lookup | `VerdictFor(id)` returns one check's outcome, or `ErrNoSuchCheck` | Stable |
-| Drift | `Compare(before, after)` names what got worse, what got better, what appeared and what disappeared | Stable |
-| Produce | `SubjectFor(target)` digests a target exactly as `Validate` recomputes it | Stable |
-| Schema | `spec.AttestationSchema`, the same bytes as the committed file | Stable |
-| A2A | `a2a.Parse` and `Validate` for the `a2a-evaluation/v1` predicate: the same envelope and verdicts about an Agent2Agent agent | New |
-| Graph | `graph`: the security graph's model, stable IDs, idempotent `Upsert`/`Link`, canonical encoding and a one-file store; `spec.GraphSchema` | New |
-| Gateway | `integrations/agentgateway-extmcp`, an `ExtMcp` processor for agentgateway built on this package | Example |
-| Signatures | verifying who wrote the bytes | Out of scope — the envelope's job |
+| Read | `Parse` an in-toto v1 Statement carrying the `mcp-evaluation/v1` predicate | [Released in 0.0.1](https://github.com/sebastienrousseau/passmcp-reporting/releases/tag/v0.0.1) |
+| Integrity | `Validate` recomputes the subject digest from the target descriptor and checks every required field | [Released in 0.0.1](https://github.com/sebastienrousseau/passmcp-reporting/releases/tag/v0.0.1) |
+| Scope | `Covers(transport, endpoint)` says whether a statement is about a given target | [Released in 0.0.1](https://github.com/sebastienrousseau/passmcp-reporting/releases/tag/v0.0.1) |
+| Lookup | `VerdictFor(id)` returns one check's outcome, or `ErrNoSuchCheck` | [Released in 0.0.1](https://github.com/sebastienrousseau/passmcp-reporting/releases/tag/v0.0.1) |
+| Drift | `Compare(before, after)` names what got worse, what got better, what appeared and what disappeared | [Released in 0.0.1](https://github.com/sebastienrousseau/passmcp-reporting/releases/tag/v0.0.1) |
+| Produce | `SubjectFor(target)` digests a target exactly as `Validate` recomputes it | [Released in 0.0.1](https://github.com/sebastienrousseau/passmcp-reporting/releases/tag/v0.0.1) |
+| Schema | `spec.AttestationSchema`, the same bytes as the committed file | [Released in 0.0.1](https://github.com/sebastienrousseau/passmcp-reporting/releases/tag/v0.0.1) |
+| A2A | `a2a.Parse` and `Validate` for the `a2a-evaluation/v1` predicate: the same envelope and verdicts about an Agent2Agent agent | [Released in 0.0.1](https://github.com/sebastienrousseau/passmcp-reporting/releases/tag/v0.0.1) |
+| Graph | `graph`: the security graph's model, stable IDs, idempotent `Upsert`/`Link`, canonical encoding and a one-file store; `spec.GraphSchema` | [Released in 0.0.1](https://github.com/sebastienrousseau/passmcp-reporting/releases/tag/v0.0.1) |
+| Gateway | `integrations/agentgateway-extmcp`, an `ExtMcp` processor for agentgateway built on this package, tagged `integrations/agentgateway-extmcp/v0.0.1` | [Released in 0.0.1](https://github.com/sebastienrousseau/passmcp-reporting/releases/tag/integrations%2Fagentgateway-extmcp%2Fv0.0.1) |
+
+Verifying who wrote the bytes is out of scope: that is the job of the
+signed envelope around a statement ([docs/verify.md](docs/verify.md)).
 
 ---
 
@@ -281,6 +280,8 @@ make test-race  # race detector, randomised order
 make spec       # regenerate the schema after a type change
 make family     # this repository's row in passmcp's family manifest
 make lockstep   # the version is passmcp's, or the next one
+make release-versions  # every version-bearing place names the CHANGELOG's version
+make coverage-badge    # the coverage.json the badge reads
 ```
 
 Every gate CI runs has a local form; [DEVELOPMENT.md](DEVELOPMENT.md) maps
@@ -312,6 +313,7 @@ The four entry points, identical across every repo in the family:
 
 | Document | Covers |
 |---|---|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the format, the verifier, the schema and the processor fit together |
 | [`docs/format.md`](docs/format.md) | Every field of a statement, and why it is there |
 | [`docs/verify.md`](docs/verify.md) | Verifying one: in Go, by schema, and the signature around it |
 | [`docs/a2a.md`](docs/a2a.md) | The A2A evaluation predicate |

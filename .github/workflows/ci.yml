@@ -138,6 +138,14 @@ jobs:
         env:
           GOTOOLCHAIN: auto
         run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+      # ./... from the root does not reach the nested processor module,
+      # which is the one with dependencies; scan it as it is installed.
+      - name: govulncheck (agentgateway processor)
+        working-directory: integrations/agentgateway-extmcp
+        env:
+          GOTOOLCHAIN: auto
+          GOWORK: "off"
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 
   api-compat:
     name: API Compatibility
@@ -179,6 +187,8 @@ jobs:
         env:
           GOTOOLCHAIN: auto
         run: make example-check
+      - name: Every version-bearing place names the CHANGELOG's version
+        run: make release-versions
       - name: This repository's row in the family manifest is true
         run: make family
       - name: Version Lockstep

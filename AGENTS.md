@@ -20,6 +20,9 @@ every CI gate.
 | The example verifies the fixture | `make example-check` |
 | The family manifest's row is true | `make family` |
 | The version is passmcp's, or the next one | `make lockstep` |
+| Every version-bearing place agrees | `make release-versions` |
+| The README follows the template and the badge row | `make readme-check` |
+| The retired product name appears nowhere | `make name-guard` |
 
 ## Commits
 
