@@ -60,8 +60,8 @@ configuration from `/etc/extmcp/config.json`:
 
 ```sh
 docker run --rm -p 4400:4400 -v "$PWD/example:/etc/extmcp:ro" \
-  ghcr.io/sebastienrousseau/agentgateway-extmcp:0.0.1
-gh attestation verify oci://ghcr.io/sebastienrousseau/agentgateway-extmcp:0.0.1 --owner sebastienrousseau
+  ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.1
+gh attestation verify oci://ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.1 --owner sebastienrousseau
 
 docker build -t agentgateway-extmcp .   # or build it from this directory
 ```
