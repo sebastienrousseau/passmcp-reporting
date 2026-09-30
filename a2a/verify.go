@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"satellion.com/passmcp-reporting/attestation"
+	"satellion.com/passmcp-reporting/internal/subjectdigest"
 )
 
 // Parse reads a statement and validates it. It refuses an MCP evaluation,
@@ -68,11 +69,11 @@ func (s *Statement) validateSubject(note func(string, ...any)) {
 		if strings.TrimSpace(sub.Name) != want {
 			note("the subject is named %q but the predicate is about %q", sub.Name, want)
 		}
-		switch got := sub.Digest["sha256"]; {
-		case got == "":
-			note("the subject has no sha256 digest")
-		case got != digest(descriptor(s.Predicate.Target)):
-			note("the subject digest does not cover the target it names: a statement whose predicate was edited after the fact")
+		switch found, mismatch := subjectdigest.Check(sub.Digest, descriptor(s.Predicate.Target)); {
+		case !found:
+			note("the subject has no %s digest", subjectdigest.Names)
+		case mismatch != "":
+			note("the subject %s digest does not cover the target it names: a statement whose predicate was edited after the fact", mismatch)
 		}
 	case 0:
 		note("no subject: the statement is about nothing")
@@ -172,13 +173,14 @@ func tally(c *attestation.Counts, status string) bool {
 	return true
 }
 
-// Covers reports whether the statement is about the agent at endpoint.
+// Covers reports whether the statement is about the agent at endpoint: the
+// subject carries a sha256 or sha512 digest, and every one of those it
+// carries is the digest of the agent's descriptor.
 func (s *Statement) Covers(endpoint string) bool {
 	if len(s.Subject) != 1 {
 		return false
 	}
-	t := Target{Endpoint: endpoint}
-	return s.Subject[0].Digest["sha256"] == digest(descriptor(t))
+	return subjectdigest.Covers(s.Subject[0].Digest, descriptor(Target{Endpoint: endpoint}))
 }
 
 // VerdictFor returns the first verdict with the given check id.

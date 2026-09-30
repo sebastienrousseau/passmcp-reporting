@@ -37,11 +37,20 @@ nice-to-have.
 ```
 
 Exactly one subject. Its `name` is the target's endpoint or command line,
-and its `sha256` is over the canonical descriptor `transport + "\n" +
+and its digest is over the canonical descriptor `transport + "\n" +
 endpoint` — not over an artifact, which `predicate.subjectKind`
 (`mcp-target-descriptor`) says out loud. A verifier recomputes the digest
 from the predicate's target and refuses a statement whose subject was
 renamed.
+
+The digest is an in-toto `DigestSet`, so it may carry more than one
+algorithm. The verifier knows `sha256` and `sha512`: it recomputes every
+one of those the subject carries and refuses the statement if any does not
+match, and it needs at least one of them. A subject with only an algorithm
+it does not know, `md5` say, is refused as a subject with no digest is;
+an unknown algorithm beside a known one is carried and ignored. passmcp
+writes `sha256` alone
+([ADR 0003](adr/0003-subject-digest-sha256-or-sha512.md)).
 
 ## The predicate
 

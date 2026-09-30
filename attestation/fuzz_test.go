@@ -26,6 +26,12 @@ func FuzzParse(f *testing.F) {
 	if b, err := valid().Marshal(); err == nil {
 		f.Add(b)
 	}
+	// A subject carrying sha512 beside sha256, which Validate accepts.
+	both := valid()
+	both.Subject[0].Digest["sha512"] = sha512Of(both.Predicate.Target)
+	if b, err := both.Marshal(); err == nil {
+		f.Add(b)
+	}
 	for _, s := range []string{
 		``, `null`, `{}`, `[]`, `"statement"`,
 		`{"_type":"https://in-toto.io/Statement/v1","subject":[{},{}]}`,

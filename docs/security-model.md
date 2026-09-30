@@ -109,7 +109,8 @@ in the Go runtime.
 ### C1. A statement `Validate` accepts is intact and about the server it names
 
 `Validate` recomputes the subject digest from the predicate's target
-descriptor and compares it with the subject's, so an edited endpoint,
+descriptor and compares it with the subject's, in every known algorithm
+(`sha256`, `sha512`) the subject carries, so an edited endpoint,
 transport or subject fails; the subject's name must be the target's
 endpoint, because that is what in-toto tooling displays; there must be
 exactly one subject; the statement and predicate types must be this
@@ -263,7 +264,7 @@ workflows on every pull request.
 | CWE-400, CWE-770 | Uncontrolled resource consumption | Statement size cap, fetch timeout, bounded denial reasons, loading off the request path | `TestLoaderReadsFilesAndHTTPS`, `TestLoaderDefaultsAreApplied`, `TestAnUnusableReasonIsBounded` |
 | CWE-918 | Server-side request forgery | Only the operator's configured source is fetched; redirects must stay on https | `TestLoaderRefusesARedirectOffHTTPS`, `TestLoaderReadsFilesAndHTTPS` |
 | CWE-319 | Cleartext transmission | `http://` sources and redirects to them refused; TLS for the gRPC listener | `TestLoaderReadsFilesAndHTTPS`, `TestRunServesOverTLS`, `TestTLSListenerRefusesOldVersionsAndPlaintext` |
-| CWE-326, CWE-327 | Weak TLS or hashing | TLS 1.2 floor; SHA-256 subject digests | `TestTLSConfigFloorIsTLS12`, `TestSubjectForIsStableAndDistinct` |
+| CWE-326, CWE-327 | Weak TLS or hashing | TLS 1.2 floor; SHA-256 or SHA-512 subject digests, every one present recomputed | `TestTLSConfigFloorIsTLS12`, `TestSubjectForIsStableAndDistinct`, `TestSubjectDigestAlgorithms` |
 | CWE-295 | Improper certificate validation | Standard library verification; no `InsecureSkipVerify` anywhere in the tree | `TestLoaderReadsFilesAndHTTPS` (only the test server's own CA is trusted) |
 | CWE-209, CWE-532 | Sensitive data in errors or logs | Fetch errors drop the URL; the graph model cannot hold a secret | `TestAFailedFetchDoesNotRepeatTheURL`, `TestTheModelHasNoFieldForASecret` |
 | CWE-362 | Race condition | Requests read one immutable snapshot, swapped under a lock; the race detector runs in CI | `make test-race`; the processor's CI job runs `-race` |
