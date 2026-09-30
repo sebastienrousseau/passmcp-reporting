@@ -45,6 +45,11 @@ imperative subject: `feat(attestation): carry the plan's kernel`, not
 - **A tracking issue, open for at least a week**, when the change alters
   what `Validate` accepts. A gateway on either side of such a change sees
   different admissions.
+- **A bats test for a fix to a script.** A change to the behaviour of
+  anything in `scripts/*.sh` comes with a case in `scripts/test/` that
+  fails on the script before the change, run by `make test-scripts`.
+  The helpers there stub the network and the clock, so a test never
+  needs either.
 - **No new dependency.** The package imports only the standard library so
   that a consumer can vet it in an afternoon; a pull request that adds a
   `require` line is declined on that ground alone.
@@ -52,7 +57,7 @@ imperative subject: `feat(attestation): carry the plan's kernel`, not
 ## Pull request checklist
 
 - [ ] `make` and `make test-race` pass
-- [ ] The change is covered by a test that fails without it
+- [ ] The change is covered by a test that fails without it; for a script, a bats test
 - [ ] `spec/` is regenerated if a type changed
 - [ ] `CHANGELOG.md` has an entry under `## [Unreleased]`
 - [ ] Commits are signed and carry a DCO sign-off

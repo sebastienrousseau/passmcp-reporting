@@ -21,6 +21,7 @@ change to describe most carefully.
 - [ ] `make test` passes
 - [ ] `make test-race` passes
 - [ ] `make spec-verify` passes (required if a type or a json tag changed)
+- [ ] `make test-scripts` passes, with a bats test that fails without the change (required if a script changed)
 - [ ] A change to what a statement may carry is covered by a test that fails without it
 - [ ] `CHANGELOG.md` has an entry under `## [Unreleased]`
 

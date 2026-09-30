@@ -16,7 +16,7 @@ file.
 | make | any | Task runner for everything below |
 
 Optional, only for the gate that uses it: `golangci-lint` (`make lint`),
-`bats` (`make test-scripts`),
+`bats`, `jq` and `python3` (`make test-scripts`),
 `markdownlint-cli2`, `codespell` and `lychee` (the Docs Lint workflow and
 `pre-commit`), `curl` and `python3` (`make family`, `make lockstep`).
 
