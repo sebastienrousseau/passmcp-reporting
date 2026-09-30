@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -67,21 +68,27 @@ func (l *Loader) read(path string) ([]byte, error) {
 	return l.capped(f)
 }
 
-func (l *Loader) fetch(ctx context.Context, url string) ([]byte, error) {
+func (l *Loader) fetch(ctx context.Context, source string) ([]byte, error) {
 	timeout := l.Timeout
 	if timeout == 0 {
 		timeout = DefaultTimeout
 	}
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, source, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/json")
 	resp, err := l.client().Do(req)
 	if err != nil {
-		return nil, err
+		// A *url.Error repeats the URL, and this error becomes the reason
+		// sent to MCP clients; a presigned URL's query is a credential.
+		var uerr *url.Error
+		if errors.As(err, &uerr) {
+			err = uerr.Err
+		}
+		return nil, fmt.Errorf("fetch: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {

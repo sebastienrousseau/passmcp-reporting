@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"sort"
 	"sync"
+	"unicode/utf8"
 
 	"satellion.com/passmcp-reporting/attestation"
 )
@@ -118,9 +119,10 @@ func Build(ctx context.Context, cfg *Config, loader *Loader, log *slog.Logger) (
 		t := cfg.Targets[name]
 		st, err := verify(ctx, loader, t)
 		if err != nil {
-			log.Warn("attestation unusable", "target", name, "source", t.Attestation, "reason", err.Error())
-			snap.Unusable[name] = err.Error()
-			snap.entries[name] = &entry{reason: err.Error()}
+			reason := bounded(err.Error())
+			log.Warn("attestation unusable", "target", name, "source", t.Attestation, "reason", reason)
+			snap.Unusable[name] = reason
+			snap.entries[name] = &entry{reason: reason}
 			continue
 		}
 		log.Info("attestation verified",
@@ -177,4 +179,22 @@ func scoreOf(st *attestation.Statement) string {
 		return "none"
 	}
 	return fmt.Sprintf("%g (%s)", st.Predicate.Score.Total, st.Predicate.Score.Grade)
+}
+
+// maxReason bounds the reason recorded for an unusable attestation. The
+// reason can quote the statement, which may be as large as the loader's
+// MaxBytes, and it is sent in every denial for that target and logged on
+// every reload.
+const maxReason = 512
+
+// bounded cuts s to maxReason bytes on a rune boundary, marking the cut.
+func bounded(s string) string {
+	if len(s) <= maxReason {
+		return s
+	}
+	cut := maxReason
+	for cut > 0 && !utf8.RuneStart(s[cut]) {
+		cut--
+	}
+	return s[:cut] + "…"
 }

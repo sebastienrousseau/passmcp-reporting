@@ -28,6 +28,12 @@ module, this repository tags first.
 
 ### Fixed
 
+- **A denial no longer repeats the attestation URL, or an unbounded
+  quote of the statement.** When a fetch failed, the reason sent to
+  every MCP client denied that target included the full URL, whose query
+  can be a credential in a presigned URL; it now names only the failure.
+  The reason for an unusable attestation is cut at 512 bytes, since it
+  can quote a statement up to `-max-bytes` long.
 - **The processor no longer follows a redirect off https.** An https
   attestation URL whose server redirected to `http://` was fetched over
   plain http, where the statement could be swapped in transit, although
