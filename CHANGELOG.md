@@ -13,7 +13,7 @@ a passmcp release, whatever changed in this tree, and a release here with
 nothing in it is the version rule working. Because passmcp imports this
 module, this repository tags first.
 
-## [0.0.3]
+## [0.0.3] — 2026-09-30
 
 The family's third release. Nothing a consumer imports changed: the
 `attestation`, `a2a`, `graph` and `spec` packages, the schemas and the
