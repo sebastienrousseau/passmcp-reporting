@@ -3,7 +3,7 @@
 
 .PHONY: all build test test-race coverage coverage-badge vet lint format spdx-check spec spec-verify readme-check \
         example-check integrations lockstep family api-check apidoc help name-guard release-versions demo \
-        test-scripts
+        test-scripts tools vulncheck
 
 # Every gate CI runs, in the order the cheap ones fail first.
 all: format vet lint spdx-check spec-verify example-check test integrations
@@ -102,13 +102,26 @@ family:
 api-check:
 	scripts/api-check.sh
 
+# The tools CI runs, at the versions tools/go.mod pins, built into
+# build/tools. tools/ is a module of its own, outside the workspace, so its
+# dependencies never reach the root module or the processor.
+TOOLS := build/tools
+tools:
+	GOWORK=off go build -C tools -o ../$(TOOLS)/ golang.org/x/exp/cmd/gorelease golang.org/x/vuln/cmd/govulncheck
+
+# Known vulnerabilities reachable from the root module, and from the
+# processor as it is installed (module mode, against its go.mod).
+vulncheck: tools
+	$(TOOLS)/govulncheck ./...
+	cd integrations/agentgateway-extmcp && GOWORK=off ../../$(TOOLS)/govulncheck ./...
+
 # The shell scripts' regression tests, in throwaway repositories with the
 # network and the clock stubbed out (scripts/test/helpers.bash). Needs bats.
 test-scripts:
 	bats scripts/test
 
 help:
-	@printf '%s\n' "targets: all build test test-race coverage coverage-badge vet lint format spdx-check spec spec-verify example-check integrations lockstep family api-check apidoc readme-check name-guard release-versions demo test-scripts"
+	@printf '%s\n' "targets: all build test test-race coverage coverage-badge vet lint format spdx-check spec spec-verify example-check integrations lockstep family api-check apidoc readme-check name-guard release-versions demo test-scripts tools vulncheck"
 
 # The project was renamed to passmcp: the old name may appear only in the
 # provenance line (scripts/name-guard.sh).

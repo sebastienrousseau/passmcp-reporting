@@ -22,11 +22,16 @@
 # is always the case on main after a release, and on any branch while the
 # proxy has not yet listed a tag that was just pushed. It says nothing
 # about the API, so that one refusal, with no other diagnostic, passes.
-# GORELEASE replaces the gorelease command, for the tests.
+# gorelease is the version tools/go.mod pins, built into build/tools;
+# GORELEASE replaces the command, for the tests.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-read -r -a gorelease <<<"${GORELEASE:-go run golang.org/x/exp/cmd/gorelease@latest}"
+if [ -z "${GORELEASE:-}" ]; then
+  GOWORK=off go build -C tools -o ../build/tools/ golang.org/x/exp/cmd/gorelease
+  GORELEASE=build/tools/gorelease
+fi
+read -r -a gorelease <<<"${GORELEASE}"
 readonly not_newest='^Can only suggest a release version when compared against the most recent version'
 
 base=$(git tag --merged HEAD --no-contains HEAD --list 'v[0-9]*' --sort=-v:refname | head -1)

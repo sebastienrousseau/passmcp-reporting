@@ -134,18 +134,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # govulncheck at the version tools/go.mod pins. ./... from the root
+      # does not reach the nested processor module, which is the one with
+      # dependencies; make vulncheck scans it too, as it is installed.
       - name: govulncheck
         env:
           GOTOOLCHAIN: auto
-        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
-      # ./... from the root does not reach the nested processor module,
-      # which is the one with dependencies; scan it as it is installed.
-      - name: govulncheck (agentgateway processor)
-        working-directory: integrations/agentgateway-extmcp
-        env:
-          GOTOOLCHAIN: auto
-          GOWORK: "off"
-        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+        run: make vulncheck
 
   api-compat:
     name: API Compatibility

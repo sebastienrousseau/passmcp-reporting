@@ -20,6 +20,14 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "chore(deps)"
+  # The tools CI runs (govulncheck, gorelease), pinned in their own
+  # module so the pins are bumped here rather than floating at @latest.
+  - package-ecosystem: "gomod"
+    directory: "/tools"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
   - package-ecosystem: "docker"
     directory: "/integrations/agentgateway-extmcp"
     schedule:

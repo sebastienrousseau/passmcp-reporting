@@ -30,7 +30,7 @@ SPDX-License-Identifier = "Apache-2.0"
 # Go module metadata and repository configuration whose formats take no
 # comments.
 [[annotations]]
-path = ["go.mod", "go.sum", ".gitignore", ".github/CODEOWNERS", ".devcontainer/devcontainer.json"]
+path = ["go.mod", "go.sum", "tools/go.mod", "tools/go.sum", ".gitignore", ".github/CODEOWNERS", ".devcontainer/devcontainer.json"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>"
 SPDX-License-Identifier = "Apache-2.0"

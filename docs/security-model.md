@@ -310,7 +310,7 @@ Fixes are named by their commit subject on the `feat/v0.0.5` branch.
 | SR-8 | Info | The container image listens in plaintext on all interfaces unless given a key pair | Accepted: a container's loopback is unreachable from the gateway; documented in the processor's README |
 | SR-9 | Info | `attestation.Parse`, `a2a.Parse` and `graph.Parse` do not cap input size | Accepted by design (C2): the caller holds the bytes and sets the limit; the processor does |
 | SR-10 | Medium | The maintainer's GitHub account lists eight SSH signing keys, one titled `draft-tap-bot`; a tag signed by any of them verifies against the published list | Open, maintainer action: review the account's signing keys. [Verifying a release](signing.md) names the one key that has signed every release and shows how to accept only it |
-| SR-11 | Low | CI runs `gorelease@latest` and `govulncheck@latest`, unpinned | Open, maintainer decision: both jobs hold only `contents: read` and no secret, so a compromised tool can fail a check but not publish; pinning trades that for update churn |
+| SR-11 | Low | CI ran `gorelease@latest` and `govulncheck@latest`, unpinned | Fixed: both are pinned in `tools/go.mod` with `tool` directives and checksummed in `tools/go.sum`; Dependabot proposes the bumps (`ci: pin the tools CI runs`) |
 | SR-12 | Info | The processor does not authenticate the gateway (no mutual TLS) | Accepted: its answers hold no secret; restrict the port with the network |
 
 ## 9. Keeping this current

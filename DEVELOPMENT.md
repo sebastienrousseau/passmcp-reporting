@@ -23,6 +23,23 @@ Optional, only for the gate that uses it: `golangci-lint` (`make lint`),
 There is no dependency to download: `go.mod` has no `require` directive,
 and keeping it that way is a rule, not a coincidence.
 
+The Go tools CI runs besides the linter, `govulncheck` and `gorelease`,
+are pinned in [`tools/go.mod`](tools/go.mod) with `tool` directives, a
+module of its own outside the workspace so that nothing it requires
+reaches the root module or the processor. `make tools` builds them into
+`build/tools`; `make vulncheck` and `make api-check` use them. Dependabot
+opens the bumps for `/tools` weekly. To bump by hand, or when Dependabot
+does not offer one (gorelease lives in `golang.org/x/exp`, which has no
+tagged releases, only pseudo-versions):
+
+```sh
+cd tools && GOWORK=off go get -tool golang.org/x/exp/cmd/gorelease@latest && GOWORK=off go mod tidy
+cd tools && GOWORK=off go get -tool golang.org/x/vuln/cmd/govulncheck@latest && GOWORK=off go mod tidy
+```
+
+`golangci-lint` is pinned by version in `ci.yml` and in
+`.devcontainer/post-create.sh`; change both together.
+
 The README's toolchain badge states the same floor, and
 `scripts/readme-check.sh` fails when the two disagree. A
 [devcontainer](.devcontainer/devcontainer.json) boots to a working
@@ -36,7 +53,7 @@ The README's toolchain badge states the same floor, and
 | Race & Shuffled Tests | `make test-race` |
 | Coverage Gate (85% per package) | `make coverage` |
 | Lint | `gofmt -l .` and `make lint` |
-| Vulnerability Scan | `go run golang.org/x/vuln/cmd/govulncheck@latest ./...`, and again in `integrations/agentgateway-extmcp` with `GOWORK=off` |
+| Vulnerability Scan | `make vulncheck`: the root module, and the processor with `GOWORK=off` |
 | API Compatibility | `make api-check`, against the last root release before HEAD |
 | Script Tests | `make test-scripts` (needs `bats`) |
 | Repository Checks | `make apidoc spec-verify example-check release-versions family lockstep` |
