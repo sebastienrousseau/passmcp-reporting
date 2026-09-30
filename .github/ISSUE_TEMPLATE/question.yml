@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+# SPDX-License-Identifier: Apache-2.0
+
+name: Question
+description: How to verify, embed or deploy something, or whether the format should carry something; anything open-ended
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The repository has no Discussions; questions are issues with the
+        `question` label. [SUPPORT.md](https://github.com/sebastienrousseau/passmcp-reporting/blob/main/SUPPORT.md)
+        lists the documentation that may already answer it.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What you are trying to do, what you tried, and where you are stuck.
+    validations:
+      required: true

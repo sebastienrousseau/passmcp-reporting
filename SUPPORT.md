@@ -18,10 +18,11 @@ Where to take a question, in the order most likely to get you an answer.
 
 ## Questions and discussion
 
-[GitHub Discussions](https://github.com/sebastienrousseau/passmcp-reporting/discussions)
-for "how do I", "should the format carry X", and anything open-ended. A
+[GitHub Issues](https://github.com/sebastienrousseau/passmcp-reporting/issues)
+for "how do I", "should the format carry X", and anything open-ended:
+open one with the Question template. The repository has no Discussions. A
 question about a verdict itself — why passmcp judged a server the way it
-did — belongs in [passmcp's discussions](https://github.com/sebastienrousseau/passmcp/discussions),
+did — belongs in [passmcp's issues](https://github.com/sebastienrousseau/passmcp/issues),
 because the verifier only reads what passmcp wrote.
 
 ## Bugs and feature requests
