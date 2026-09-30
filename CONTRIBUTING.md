@@ -54,6 +54,72 @@ imperative subject: `feat(attestation): carry the plan's kernel`, not
   that a consumer can vet it in an afternoon; a pull request that adds a
   `require` line is declined on that ground alone.
 
+## Code review
+
+**Who reviews.** The maintainer, Sebastien Rousseau
+(`@sebastienrousseau`), reviews every pull request; `CODEOWNERS`
+requests the review automatically. The project has one maintainer, so
+there is no second reviewer: the maintainer's own changes are held to
+the same checklist below and to the CI gates, which `main`'s branch
+protection requires to pass before anything merges, but no second
+person approves them. That follows from the single-maintainer model
+[GOVERNANCE.md](GOVERNANCE.md) states, and the
+[security model](docs/security-model.md#7-continuity-and-bus-factor)
+lists what compensates for it.
+
+**The process.**
+
+1. A pull request targets `main`; the PR Base check fails any other
+   base.
+2. CI runs: tests on three operating systems and two Go versions, the
+   race detector, the 85% coverage gate, lint, `govulncheck`, the API
+   compatibility check, the repository checks, the script tests,
+   licence headers, Markdown, spelling and links, and the DCO check.
+   A red gate is fixed in the pull request, never waived.
+3. The maintainer reads the whole diff against the list below and
+   either approves, asks for changes in review comments, or explains
+   why the change is declined. Expect a first response within a week
+   ([SUPPORT.md](SUPPORT.md)).
+4. Accepted work is merged by the maintainer. Between releases it is
+   collected on the release branch `feat/vX.Y.Z`, whose single pull
+   request into `main` is the release; a contribution may be carried
+   there as commits, with its own pull request closed with a link to
+   the release pull request. Dependabot updates arrive the same way.
+
+**What the reviewer checks.**
+
+- **Tests.** The change is covered by a test that fails without it: a
+  statement the change accepts or rejects in `attestation_test.go` (or
+  the `a2a` and `graph` equivalents), a processor case, or a bats test
+  in `scripts/test/` for a script. Coverage stays at or above 85% in
+  every package.
+- **Security.** Anything read from a statement, a request or a fetched
+  source is treated as untrusted; nothing new reads a file, opens a
+  connection or follows a reference on a statement's say-so; nothing
+  new can put a credential or unbounded text in a denial or a log
+  line. A change to a trust boundary updates
+  [docs/security-model.md](docs/security-model.md).
+- **SPDX.** Every new source file carries an SPDX header (`make
+  spdx-check`); copied files keep their upstream attribution.
+- **CHANGELOG.** A user-visible change has an entry under
+  `## [Unreleased]`.
+- **API compatibility.** `make api-check` passes, and a change to what
+  `Validate` accepts, in either direction, is treated as breaking: it
+  has its tracking issue, open for at least a week, and a CHANGELOG
+  entry that says so. `spec/` is regenerated in the same commit when a
+  type changed.
+- **Dependencies.** The root module gains no `require` line; a new
+  dependency of the processor says why in its commit.
+- **Commits.** Signed, with a DCO sign-off, Conventional Commit
+  subjects, and one concern per commit.
+
+**What makes a change acceptable.** Every CI gate is green, every item
+above holds, the change fits the project's scope (the format, its
+verifier and the processor; not verdicts, which are passmcp's), and a
+behaviour change is not bundled with an unrelated cleanup. A change
+that meets all of that is merged; one that does not is sent back with
+the reason.
+
 ## Pull request checklist
 
 - [ ] `make` and `make test-race` pass
