@@ -24,6 +24,11 @@ module, this repository tags first.
 
 ### Fixed
 
+- **The processor no longer follows a redirect off https.** An https
+  attestation URL whose server redirected to `http://` was fetched over
+  plain http, where the statement could be swapped in transit, although
+  an `http://` URL in the configuration is refused. A redirect is now
+  followed only to another https URL.
 - **The processor's README describes what a denial looks like.** It
   said every denial reaches the MCP client as JSON-RPC error `-32001`;
   current agentgateway answers a denied `tools/call` with an `isError`

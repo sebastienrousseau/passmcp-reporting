@@ -162,7 +162,8 @@ certificate against when it is not publicly trusted:
 - `targets` keys are agentgateway backend names, exactly as they appear
   in the gateway's `mcp.targets[].name`.
 - `attestation` is a file path or an `https://` URL. `http://` is
-  refused; a statement that could be swapped in transit is not evidence.
+  refused, and so is a redirect from `https://` to `http://`; a
+  statement that could be swapped in transit is not evidence.
 - `endpoint` and `transport` describe the server passmcp evaluated. They
   are checked through the statement's subject digest (`Covers`), not by
   string comparison, so a statement about one server cannot be pointed
