@@ -17,6 +17,10 @@ module, this repository tags first.
 
 ### Added
 
+- **A fuzz target for the A2A parser.** `a2a.FuzzParse` checks what
+  `attestation.FuzzParse` and `graph.FuzzParse` already check for the
+  other two formats: `Parse` never panics, and an accepted statement
+  covers its own agent and survives `Marshal` byte for byte.
 - **The agentgateway processor serves TLS.** `-tls-cert` and `-tls-key`
   put its gRPC listener behind TLS 1.2 or later; without them it stays
   plaintext, for loopback. A certificate without its key, or a key that
