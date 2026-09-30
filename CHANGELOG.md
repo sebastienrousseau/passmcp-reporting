@@ -15,6 +15,13 @@ module, this repository tags first.
 
 ## [Unreleased]
 
+### Added
+
+- **The agentgateway processor serves TLS.** `-tls-cert` and `-tls-key`
+  put its gRPC listener behind TLS 1.2 or later; without them it stays
+  plaintext, for loopback. A certificate without its key, or a key that
+  does not match, is refused before the processor listens.
+
 ### Fixed
 
 - **The API Compatibility check passes on main after a release.** It

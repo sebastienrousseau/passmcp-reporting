@@ -75,14 +75,53 @@ agentgateway-extmcp -completion fish > ~/.config/fish/completions/agentgateway-e
 ```
 
 Flags: `-config` (required), `-listen` (default `127.0.0.1:4400`; use
-`0.0.0.0:…` in a container), `-reload-interval` (default off),
-`-max-bytes` (default 1 MiB per statement), `-fetch-timeout` (default
-10s), `-log-level`, and `-completion` (print a shell completion script). Diagnostics are JSON lines on stderr.
+`0.0.0.0:…` in a container), `-tls-cert` and `-tls-key` (serve over
+TLS; see below), `-reload-interval` (default off), `-max-bytes`
+(default 1 MiB per statement), `-fetch-timeout` (default 10s),
+`-log-level`, and `-completion` (print a shell completion script).
+Diagnostics are JSON lines on stderr.
 
 Statements are read once at startup. `SIGHUP` re-reads the configuration
 and every statement; `-reload-interval` does the same on a timer. A
 reload whose configuration does not parse is logged and the previous
 table stays in service.
+
+### TLS
+
+Without `-tls-cert` and `-tls-key` the gRPC listener is plaintext, which
+is right on loopback and nowhere else. Anywhere the gateway reaches the
+processor over a network, give it a certificate:
+
+```sh
+agentgateway-extmcp -config config.json -listen 0.0.0.0:4400 \
+  -tls-cert /etc/extmcp/tls.crt -tls-key /etc/extmcp/tls.key
+```
+
+- Both flags take PEM files: the certificate chain, leaf first, and its
+  private key. Naming one without the other is refused at startup, as is
+  a key that does not match the certificate, so a processor that is
+  listening is one that is serving TLS.
+- The listener accepts TLS 1.2 and 1.3, nothing older. The cipher suites
+  are the Go standard library's defaults.
+- The key pair is read once at startup. Restart the processor to rotate
+  it; `SIGHUP` reloads the configuration and the attestations, not the
+  certificate.
+- The processor does not authenticate its clients: there is no mutual
+  TLS. Restrict who can reach the port with the network, as for any
+  internal gRPC service.
+
+On the gateway side, the processor entry's `policies.backendTLS` makes
+agentgateway connect over TLS; `root` names the CA bundle to check the
+certificate against when it is not publicly trusted:
+
+```yaml
+        - kind: remote
+          host: extmcp.internal:4400
+          failureMode: failClosed
+          policies:
+            backendTLS:
+              root: /etc/agentgateway/extmcp-ca.pem
+```
 
 ### Configuration
 
@@ -166,9 +205,10 @@ gate.
   processor reads it, or serve it from a location only your pipeline can
   write. The `attestation` package is the payload half of that pipeline
   on purpose.
-- **TLS between the gateway and the processor.** The gRPC listener is
-  plaintext; put it on loopback or a private network, or terminate TLS
-  in front of it and configure `backendTLS` on the processor entry.
+- **Client authentication.** The listener serves TLS with `-tls-cert`
+  and `-tls-key` but does not ask the gateway for a certificate. Its
+  answers carry no secret, only a decision and a score; restrict who can
+  reach it with the network.
 - **Response inspection and request mutation.** Both are in the wire
   contract and neither is used.
 
