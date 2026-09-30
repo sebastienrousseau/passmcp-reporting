@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 .PHONY: all build test test-race coverage coverage-badge vet lint format spdx-check spec spec-verify readme-check \
-        example-check integrations lockstep family api-check apidoc help name-guard release-versions demo
+        example-check integrations lockstep family api-check apidoc help name-guard release-versions demo \
+        test-scripts
 
 # Every gate CI runs, in the order the cheap ones fail first.
 all: format vet lint spdx-check spec-verify example-check test integrations
@@ -94,23 +95,20 @@ family:
 	scripts/family.sh
 
 # The root module's tags are bare `vX.Y.Z`; the nested processor's are
-# `integrations/agentgateway-extmcp/vX.Y.Z`. Without --match, describe picked
-# whichever was newest - the nested tag, which gorelease cannot use as this
-# module's base - and the check reported "no incompatible change" having
-# compared nothing. A gorelease that did not run is now a failure, not a pass.
+# `integrations/agentgateway-extmcp/vX.Y.Z` and never a base here. The base
+# is the last root release before HEAD, not a tag on HEAD itself, and
+# gorelease declining to suggest a version (the base is not the proxy's
+# newest) is not an API finding. scripts/api-check.sh says why.
 api-check:
-	@tag=$$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || true); \
-	if [ -z "$$tag" ]; then echo "api-check: no release tag yet, nothing to compare"; exit 0; fi; \
-	out=$$(go run golang.org/x/exp/cmd/gorelease@latest -base="$$tag" 2>&1); rc=$$?; \
-	printf '%s\n' "$$out"; \
-	if printf '%s' "$$out" | grep -qiE 'incompatible changes'; then \
-	  echo "api-check: the public API changed incompatibly against $$tag"; exit 1; \
-	fi; \
-	if [ "$$rc" -ne 0 ]; then echo "api-check: gorelease did not complete against $$tag"; exit 1; fi; \
-	echo "api-check: no incompatible change against $$tag"
+	scripts/api-check.sh
+
+# The shell scripts' regression tests, in throwaway repositories with the
+# network and the clock stubbed out (scripts/test/helpers.bash). Needs bats.
+test-scripts:
+	bats scripts/test
 
 help:
-	@printf '%s\n' "targets: all build test test-race coverage coverage-badge vet lint format spdx-check spec spec-verify example-check integrations lockstep family api-check apidoc readme-check name-guard release-versions demo"
+	@printf '%s\n' "targets: all build test test-race coverage coverage-badge vet lint format spdx-check spec spec-verify example-check integrations lockstep family api-check apidoc readme-check name-guard release-versions demo test-scripts"
 
 # The project was renamed to passmcp: the old name may appear only in the
 # provenance line (scripts/name-guard.sh).

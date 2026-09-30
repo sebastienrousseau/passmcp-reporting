@@ -17,6 +17,14 @@ module, this repository tags first.
 
 ### Fixed
 
+- **The API Compatibility check passes on main after a release.** It
+  compared HEAD with the tag on HEAD itself, and failed whenever gorelease
+  could not suggest a version because the module proxy did not yet list
+  that tag as newest, which turned main red after v0.0.4 (run
+  36686509680). It now compares against the last root release before
+  HEAD, and gorelease declining to suggest a version is not a failure;
+  an incompatible change or a gorelease that could not load the packages
+  still is. `scripts/test/api-check.bats` covers each case.
 - **The processor tag's release run waits for its image.** Both tags are
   pushed together, so that run could start before the root tag's run had
   published the processor image and failed at once, although the page

@@ -16,6 +16,7 @@ file.
 | make | any | Task runner for everything below |
 
 Optional, only for the gate that uses it: `golangci-lint` (`make lint`),
+`bats` (`make test-scripts`),
 `markdownlint-cli2`, `codespell` and `lychee` (the Docs Lint workflow and
 `pre-commit`), `curl` and `python3` (`make family`, `make lockstep`).
 
@@ -36,7 +37,8 @@ The README's toolchain badge states the same floor, and
 | Coverage Gate (85% per package) | `make coverage` |
 | Lint | `gofmt -l .` and `make lint` |
 | Vulnerability Scan | `go run golang.org/x/vuln/cmd/govulncheck@latest ./...`, and again in `integrations/agentgateway-extmcp` with `GOWORK=off` |
-| API Compatibility | `make api-check` |
+| API Compatibility | `make api-check`, against the last root release before HEAD |
+| Script Tests | `make test-scripts` (needs `bats`) |
 | Repository Checks | `make apidoc spec-verify example-check release-versions family lockstep` |
 | Licence Headers | `make spdx-check` |
 | Markdown & Spelling | `make readme-check`, `markdownlint-cli2 '**/*.md'` and `codespell` |

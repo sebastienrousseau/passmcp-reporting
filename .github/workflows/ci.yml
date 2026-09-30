@@ -164,6 +164,27 @@ jobs:
           GOTOOLCHAIN: auto
         run: make api-check
 
+  scripts:
+    name: Script Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The runner image's bats, from Ubuntu's archive; the tests stub the
+      # network and the clock, so they need nothing else.
+      - name: Install bats
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bats
+      - name: The shell scripts' regression tests
+        run: make test-scripts
+
   checks:
     name: Repository Checks
     runs-on: ubuntu-latest
