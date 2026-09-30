@@ -335,6 +335,7 @@ The four entry points, identical across every repo in the family:
 | [`SECURITY.md`](SECURITY.md) | Disclosure policy, supported versions, what is guaranteed |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Signed-commit and DCO policy, what a format change needs |
 | [`CHANGELOG.md`](CHANGELOG.md) | Per-release notes, and the lockstep version rule |
+| [`ROADMAP.md`](ROADMAP.md) | The next twelve months: what this repository intends to do, and what it will not |
 | [`SUPPORT.md`](SUPPORT.md) | Where to ask, and what to expect |
 
 ---

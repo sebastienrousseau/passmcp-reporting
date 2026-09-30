@@ -17,6 +17,9 @@ module, this repository tags first.
 
 ### Added
 
+- **A roadmap**, `ROADMAP.md`: the maintainer's current intent for the
+  next twelve months and what the repository will not do, each line
+  linked to the decision it comes from.
 - **The security model and assurance case**, in
   `docs/security-model.md`: the threat model, the trust boundaries of
   the verifier and of the processor, the secure design principles and
