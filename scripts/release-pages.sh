@@ -45,11 +45,32 @@ since() {
   git describe --tags --abbrev=0 --match "${match}" "${rev}" 2>/dev/null || true
 }
 
+# await_digest polls for the image a release is still pushing. Both tags
+# are pushed together, so the processor tag's run can start before the
+# root tag's run has published the image; failing at once turned every
+# release's second run red. It waits RELEASE_PAGES_WAIT seconds (default
+# 1200), checking every RELEASE_PAGES_POLL (default 30), and prints
+# nothing if the image never appears.
+await_digest() {
+  local ver=$1 waited=0 sha=""
+  local limit=${RELEASE_PAGES_WAIT:-1200} step=${RELEASE_PAGES_POLL:-30}
+  while [ -z "${sha}" ] && [ "${waited}" -lt "${limit}" ]; do
+    echo "release-pages: waiting for ghcr.io/${IMAGE_PATH}:${ver} (${waited}s of ${limit}s)" >&2
+    sleep "${step}"
+    waited=$((waited + step))
+    sha=$(digest "${ver}")
+  done
+  printf '%s' "${sha}"
+}
+
 # image_note is the checksums section's account of what is published
 # instead of files. A published page must name the real digest.
 image_note() {
   local kind=$1 ver=$2 publish=$3 sha
   sha=$(digest "${ver}")
+  if [ -z "${sha}" ] && [ "${publish}" = yes ]; then
+    sha=$(await_digest "${ver}")
+  fi
   if [ -z "${sha}" ]; then
     if [ "${publish}" = yes ]; then
       echo "release-pages: ghcr.io/${IMAGE_PATH}:${ver} is not published; re-run once the v${ver} release has pushed it" >&2
