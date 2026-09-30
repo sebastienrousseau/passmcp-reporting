@@ -21,6 +21,10 @@
   <a href="https://github.com/sebastienrousseau/passmcp-reporting/blob/main/DEVELOPMENT.md#requirements"><img src="https://img.shields.io/badge/go-1.26.8%2B-93450a.svg?style=for-the-badge&logo=go" alt="Go 1.26.8+" /></a>
 </p>
 
+<p align="center">
+  <img src=".github/demo.gif" alt="examples/verify checking the two sample attestations offline: an MCP evaluation scored 88 out of 100 and an A2A evaluation scored 62, each with its failing check" width="100%" />
+</p>
+
 ---
 
 ## Contents
@@ -60,7 +64,7 @@
 ### As a Go library
 
 ```sh
-go get satellion.com/passmcp-reporting@v0.0.3
+go get satellion.com/passmcp-reporting@v0.0.4
 ```
 
 The module has no dependencies: adding it adds one line to `go.sum`.
@@ -132,7 +136,7 @@ it, and checking the signature, is the envelope's job — see
 
 ## The passmcp-reporting ecosystem
 
-Every component is released at **0.0.3** and moves in lockstep: one version across the family, released together ([docs/ecosystem.md](https://github.com/sebastienrousseau/passmcp/blob/main/docs/ecosystem.md)).
+Every component is released at **0.0.4** and moves in lockstep: one version across the family, released together ([docs/ecosystem.md](https://github.com/sebastienrousseau/passmcp/blob/main/docs/ecosystem.md)).
 
 | Component | Purpose | Use case |
 | :--- | :--- | :--- |
