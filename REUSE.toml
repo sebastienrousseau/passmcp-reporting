@@ -43,16 +43,6 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>"
 SPDX-License-Identifier = "Apache-2.0"
 
-# The ExtMcp service definition, copied verbatim from agentgateway (commit
-# 38fc45b) so the bindings can be regenerated; its provenance is in
-# proto/README.md beside it. The generated bindings carry the same notice
-# in their headers.
-[[annotations]]
-path = ["integrations/agentgateway-extmcp/proto/*.proto"]
-precedence = "aggregate"
-SPDX-FileCopyrightText = "The agentgateway Authors <https://github.com/agentgateway/agentgateway>"
-SPDX-License-Identifier = "Apache-2.0"
-
 # The README demo, rendered by `make demo` from .github/demo.tape; a GIF has
 # nowhere to carry a header.
 [[annotations]]

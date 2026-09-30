@@ -37,6 +37,11 @@ module, this repository tags first.
 
 ### Fixed
 
+- **The copied ExtMcp proto carries its own copyright and licence.**
+  `integrations/agentgateway-extmcp/proto/ext_mcp.proto` has an SPDX
+  header naming the agentgateway authors and the upstream commit, and
+  the regenerated bindings carry it; the licence no longer lives only in
+  `REUSE.toml`.
 - **SECURITY.md no longer claims the whole project has no network, no
   files and no dependencies.** That holds for the verifier packages;
   `graph` reads and writes its store file, and the processor is a

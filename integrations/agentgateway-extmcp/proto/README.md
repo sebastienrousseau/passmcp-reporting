@@ -3,22 +3,25 @@
 
 # proto
 
-`ext_mcp.proto` is a verbatim copy of
-`crates/protos/proto/ext_mcp.proto` from
+`ext_mcp.proto` is a copy of `crates/protos/proto/ext_mcp.proto` from
 [agentgateway](https://github.com/agentgateway/agentgateway) at commit
-`38fc45b`, licensed under Apache-2.0 by the agentgateway authors. The
-upstream file carries no header of its own; this note is its provenance.
-It is the wire contract an `mcpGuardrails` processor speaks, and it is
-copied rather than fetched so the module builds from a checkout with no
-network access.
+`38fc45b`, licensed under Apache-2.0 by the agentgateway authors
+(agentgateway's `LICENSE`; its charter leaves copyright with each
+contributor). The upstream file carries no header of its own, so the
+copy adds one, an SPDX header naming the agentgateway authors and the
+commit; that header is the only change. It is the wire contract an
+`mcpGuardrails` processor speaks, and it is copied rather than fetched
+so the module builds from a checkout with no network access.
 
 The Go bindings in `../gen/extmcp` are generated from it by
 `make generate` (buf as the compiler, `protoc-gen-go` and
 `protoc-gen-go-grpc` as local plugins) and committed, so a consumer
-needs no protobuf toolchain. The only change on the way through is the
+needs no protobuf toolchain. Both plugins copy the proto's header to
+the top of the files they write, so the bindings carry the same
+attribution. The only other change on the way through is the
 `go_package` option, which buf's managed mode points at this module
-instead of agentgateway's tree; the proto file itself is not edited.
+instead of agentgateway's tree without editing the proto.
 
-To pick up a newer upstream revision: replace the file, update the
-commit in this note and in the header of the generated files, and run
+To pick up a newer upstream revision: replace the file, put the header
+back with the new commit, update the commit in this note, and run
 `make generate`.

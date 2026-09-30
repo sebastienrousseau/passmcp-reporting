@@ -1,3 +1,10 @@
+// SPDX-FileCopyrightText: The agentgateway Authors <https://github.com/agentgateway/agentgateway>
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copied from agentgateway's crates/protos/proto/ext_mcp.proto at commit
+// 38fc45b, which has no header of its own; this header is the only change.
+// Provenance: proto/README.md in agentgateway-extmcp.
+
 syntax = "proto3";
 
 package agentgateway.dev.ext_mcp;
