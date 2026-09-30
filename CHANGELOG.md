@@ -38,6 +38,25 @@ module, this repository tags first.
   plaintext, for loopback. A certificate without its key, or a key that
   does not match, is refused before the processor listens.
 
+- **The processor reloads its TLS key pair without a restart**
+  ([#12](https://github.com/sebastienrousseau/passmcp-reporting/issues/12)).
+  `SIGHUP` and `-reload-interval` re-read `-tls-cert` and `-tls-key`
+  with the configuration and the attestations; the next connection is
+  served the new certificate. A pair that does not load is logged and
+  the certificate in service stays, so rotating with cert-manager or an
+  ACME client no longer opens a gap in the gate.
+- **Tests for `scripts/readme-check.sh`**
+  ([#11](https://github.com/sebastienrousseau/passmcp-reporting/issues/11)).
+  `scripts/test/readme-check.bats` has a case for every rule the script
+  enforces, each shown to fail when that rule is taken out of the
+  script.
+- **A complexity gate that only ratchets down.** `make complexity`
+  holds every function to cyclomatic 10, cognitive 15 and 60 lines, and
+  every hand-written Go file to 500 lines, against
+  `scripts/complexity-baseline.txt`, the five functions already over;
+  a new or worse offender fails, and so does a fixed one left in the
+  baseline. It runs as the Lint job's last step.
+
 ### Changed
 
 - **Breaking: `Validate` and `Covers` accept a sha512 subject digest
@@ -54,6 +73,15 @@ module, this repository tags first.
   still reads it, so what passmcp produces does not change. The errors
   now say "no sha256 or sha512 digest" and name the algorithm that does
   not match.
+
+- **The complexity ceilings in `.golangci.yml` are the portfolio's**:
+  `gocyclo` 10 (was 15), `gocognit` 15 (was 20), `funlen` 60 lines (was
+  80). The three run in `make complexity` rather than `make lint`.
+- **CI's tools are pinned.** `govulncheck` (v1.8.0) and `gorelease`
+  are built from `tools/go.mod` instead of `@latest`, so a check no
+  longer changes with a release nobody reviewed; Dependabot proposes the
+  bumps. `make vulncheck` runs the scan locally as CI does. This closes
+  SR-11 in the security review.
 
 ### Fixed
 
