@@ -13,6 +13,21 @@ a passmcp release, whatever changed in this tree, and a release here with
 nothing in it is the version rule working. Because passmcp imports this
 module, this repository tags first.
 
+## [0.0.3] — 2026-09-30
+
+The family's third release. Nothing a consumer imports changed: the
+`attestation`, `a2a`, `graph` and `spec` packages, the schemas and the
+predicates are the 0.0.2 ones, and `Validate` accepts exactly what it
+accepted. The agentgateway processor is unchanged.
+
+### Added
+
+- **Fuzz targets for the two parsers that read untrusted input.**
+  `attestation.FuzzParse` and `graph.FuzzParse` check that `Parse`
+  never panics and that anything it accepts survives `Marshal` and a
+  second `Parse` byte for byte; a statement must also still cover its
+  own target, and a graph's edges must still resolve to its nodes.
+
 ## [0.0.2] — 2026-09-29
 
 The family's second release. Nothing a consumer imports changed: the
