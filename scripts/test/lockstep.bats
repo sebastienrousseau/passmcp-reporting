@@ -90,3 +90,11 @@ released() {
   run "${SANDBOX}/scripts/lockstep.sh"
   [ "${status}" -eq 1 ]
 }
+
+@test "a CHANGELOG with no release heading fails" {
+  printf '# Changelog\n\n## [Unreleased]\n' >"${SANDBOX}/CHANGELOG.md"
+  released 0.0.4
+  run "${SANDBOX}/scripts/lockstep.sh"
+  [ "${status}" -eq 1 ]
+  [[ "${output}" == *"no released version heading"* ]]
+}
