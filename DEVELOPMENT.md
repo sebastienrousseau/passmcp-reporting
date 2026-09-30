@@ -69,8 +69,11 @@ make coverage-badge   # writes coverage.json; the figure CI publishes
 |---|---|---|
 | `spec/attestation/mcp-evaluation-v1.schema.json` | `make spec`, from the `attestation` types by reflection | `make spec-verify` in CI |
 | `attestation/testdata/statement.json` | `PASSMCP_UPDATE_FIXTURES=1 go test ./attestation/` | `TestTheExampleFixtureIsCurrent` |
+| `.github/demo.gif`, the README demo | `make demo`: [VHS](https://github.com/charmbracelet/vhs) records `.github/demo.tape` (needs `vhs`, `ttyd`, `ffmpeg`) | `make readme-check` checks it is present; look at it after regenerating |
 
-Never edit either by hand. Change the type, regenerate, commit both.
+Never edit one by hand. Change the source, regenerate, commit both. The demo
+runs `examples/verify` on the fixtures, so re-render it when either changes
+what that prints.
 
 ## Test layout
 

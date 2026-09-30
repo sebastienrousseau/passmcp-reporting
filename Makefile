@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 .PHONY: all build test test-race coverage coverage-badge vet lint format spdx-check spec spec-verify readme-check \
-        example-check integrations lockstep family api-check apidoc help name-guard release-versions
+        example-check integrations lockstep family api-check apidoc help name-guard release-versions demo
 
 # Every gate CI runs, in the order the cheap ones fail first.
 all: format vet lint spdx-check spec-verify example-check test integrations
@@ -62,6 +62,14 @@ example-check:
 # gate with the same linter configuration.
 # Every exported identifier in the public packages has a doc comment, since
 # pkgsite renders those comments as the API reference.
+# The README demo (.github/demo.gif), rendered by VHS from .github/demo.tape:
+# examples/verify checking both sample attestations offline. The build warms
+# the cache so the recorded `go run` starts at once. Needs vhs, ttyd and
+# ffmpeg.
+demo:
+	go build -o build/demo/verify ./examples/verify
+	vhs .github/demo.tape
+
 apidoc:
 	go run ./scripts/apidoc ./attestation ./a2a ./graph ./spec
 
@@ -102,7 +110,7 @@ api-check:
 	echo "api-check: no incompatible change against $$tag"
 
 help:
-	@printf '%s\n' "targets: all build test test-race coverage coverage-badge vet lint format spdx-check spec spec-verify example-check integrations lockstep family api-check apidoc readme-check name-guard release-versions"
+	@printf '%s\n' "targets: all build test test-race coverage coverage-badge vet lint format spdx-check spec spec-verify example-check integrations lockstep family api-check apidoc readme-check name-guard release-versions demo"
 
 # The project was renamed to passmcp: the old name may appear only in the
 # provenance line (scripts/name-guard.sh).
