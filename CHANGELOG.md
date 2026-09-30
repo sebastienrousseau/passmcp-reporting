@@ -17,6 +17,11 @@ module, this repository tags first.
 
 ### Added
 
+- **The security model and assurance case**, in
+  `docs/security-model.md`: the threat model, the trust boundaries of
+  the verifier and of the processor, the secure design principles and
+  common weaknesses with the test that counters each, and the security
+  review of 2026-09-30 with its findings.
 - **How to verify a release**, in `docs/signing.md`: the SSH-signed
   tags against the maintainer's published signing keys, the Go checksum
   database, and the processor image's build provenance with
@@ -32,6 +37,10 @@ module, this repository tags first.
 
 ### Fixed
 
+- **SECURITY.md no longer claims the whole project has no network, no
+  files and no dependencies.** That holds for the verifier packages;
+  `graph` reads and writes its store file, and the processor is a
+  network service with dependencies.
 - **A denial no longer repeats the attestation URL, or an unbounded
   quote of the statement.** When a fetch failed, the reason sent to
   every MCP client denied that target included the full URL, whose query

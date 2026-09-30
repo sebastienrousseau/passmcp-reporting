@@ -54,6 +54,7 @@ nav:
   - The security graph: graph.md
   - Benchmarks: BENCHMARKS.md
   - Verifying a release: signing.md
+  - Security model: security-model.md
   - Decision records:
       - Index: adr/README.md
       - 0001 The verifier in its own module: adr/0001-verifier-in-its-own-module.md

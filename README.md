@@ -297,10 +297,14 @@ them. `spec/attestation/` is generated and never edited by hand.
 
 `Validate` recomputes the subject digest and refuses a rewritten subject, a
 second subject, a score without its rubric, or a predicate of another
-type; each refusal is a test. The package imports only the standard
-library, opens no file and no connection, and CI runs `govulncheck` on
-every push. What it does not check is a signature: that is the envelope
-around the statement, and a consumer must verify both.
+type; each refusal is a test. The verifier imports only the standard
+library and opens no file and no connection; the agentgateway processor,
+a network service with its own dependencies, is modelled separately.
+CI runs `govulncheck` on both modules on every push. What the verifier
+does not check is a signature: that is the envelope around the
+statement, and a consumer must verify both. The threat model and the
+latest security review are in [`docs/security-model.md`](docs/security-model.md);
+verifying a release is [`docs/signing.md`](docs/signing.md).
 
 Report vulnerabilities according to [`SECURITY.md`](SECURITY.md).
 
@@ -323,6 +327,7 @@ The four entry points, identical across every repo in the family:
 | [`docs/a2a.md`](docs/a2a.md) | The A2A evaluation predicate |
 | [`docs/graph.md`](docs/graph.md) | The security graph's model and store |
 | [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) | What an admission decision costs |
+| [`docs/security-model.md`](docs/security-model.md) | Threat model, trust boundaries, how common weaknesses are countered, and the latest security review |
 | [`docs/signing.md`](docs/signing.md) | Verifying a release: the signed tags, the Go checksum, the processor image's provenance |
 | [`docs/adr/`](docs/adr/README.md) | Decision records for this repository |
 | [`spec/`](spec/README.md) | The published schema, and where the rubric is |
