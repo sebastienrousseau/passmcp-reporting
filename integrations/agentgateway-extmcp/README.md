@@ -47,7 +47,7 @@ Install a release, or run it from a checkout of this
 directory:
 
 ```sh
-go install satellion.com/passmcp-reporting/integrations/agentgateway-extmcp/cmd/agentgateway-extmcp@v0.0.3
+go install satellion.com/passmcp-reporting/integrations/agentgateway-extmcp/cmd/agentgateway-extmcp@v0.0.4
 agentgateway-extmcp -config example/config.json -listen 127.0.0.1:4400
 
 go run ./cmd/agentgateway-extmcp -config example/config.json -listen 127.0.0.1:4400
@@ -60,8 +60,8 @@ configuration from `/etc/extmcp/config.json`:
 
 ```sh
 docker run --rm -p 4400:4400 -v "$PWD/example:/etc/extmcp:ro" \
-  ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.3
-gh attestation verify oci://ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.3 --owner sebastienrousseau
+  ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.4
+gh attestation verify oci://ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.4 --owner sebastienrousseau
 
 docker build -t agentgateway-extmcp .   # or build it from this directory
 ```

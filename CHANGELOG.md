@@ -13,7 +13,7 @@ a passmcp release, whatever changed in this tree, and a release here with
 nothing in it is the version rule working. Because passmcp imports this
 module, this repository tags first.
 
-## [Unreleased]
+## [0.0.4] — 2026-09-30
 
 ### Added
 
