@@ -89,20 +89,43 @@ repository tags first**:
 1. Date the `## [X.Y.Z]` heading in `CHANGELOG.md` (`## [X.Y.Z] — date`),
    set `date-released` in `CITATION.cff`, and check the install snippets
    in `README.md` and the processor's README, the README's family
-   sentence and `docs/releases/vX.Y.Z.md` name the version.
+   sentence and `docs/releases/vX.Y.Z.md` name the version. The
+   processor's highlights go in
+   `docs/releases/agentgateway-extmcp/vX.Y.Z.md`. The two highlights files
+   are the only hand-written part of the release pages.
 2. `make lockstep` — the version is passmcp's latest release or the next.
 3. `make release-versions` (`scripts/verify-release-versions.sh vX.Y.Z`).
 4. Push a signed annotated tag `vX.Y.Z` with the message
-   `passmcp-reporting vX.Y.Z`. The release workflow publishes the changelog
-   section as the release notes and the processor's image; the module
-   proxy serves the tag.
+   `passmcp-reporting vX.Y.Z`. The release workflow publishes the
+   processor's image, then the release page; the module proxy serves the
+   tag.
 5. Tag the processor `integrations/agentgateway-extmcp/vX.Y.Z` with the
    message `agentgateway-extmcp vX.Y.Z`. Its `go.mod` requires a released
    root version; moving it to `vX.Y.Z`, when it needs the new verifier,
    is a commit after step 4
    ([ADR 0002](docs/adr/0002-processor-nested-module-via-go-work.md)).
+   The tag's own run of the release workflow publishes the processor's
+   page; it fails, and is re-run, if step 4's image is not pushed yet.
 6. Read the tags and the release pages back from GitHub before calling
    it done.
+
+The release pages are composed, never edited by hand.
+`scripts/release-pages.sh` runs `scripts/releasepage` for each tag: the
+title (`passmcp-reporting X.Y.Z`, or `agentgateway-extmcp X.Y.Z`, not
+marked latest), the highlights, GitHub's generated `## What's Changed`
+(and `## New Contributors` when there are any) from the previous tag of
+the same series, a `## Checksums` section that says no files are attached
+and names the digest ghcr.io serves for the processor image, and the
+`**Full Changelog**` link. Each published page is read back and the step
+fails unless GitHub shows what was composed. The workflow's
+`workflow_dispatch` run prints both pages for the newest CHANGELOG
+release and publishes nothing; locally (`gh` needs a token with contents
+access for GitHub's generated notes):
+
+```sh
+scripts/release-pages.sh root X.Y.Z
+scripts/release-pages.sh processor X.Y.Z
+```
 
 ## Conventions
 
