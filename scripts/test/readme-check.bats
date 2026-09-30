@@ -62,6 +62,10 @@ HEAD
 TAIL
 }
 
+# A code fence and an inline-code tick, kept out of single-quoted strings.
+fence="\`\`\`"
+tick="\`"
+
 # edit applies a sed expression to the sandbox README.
 edit() {
   sed -i.bak "$1" "${SANDBOX}/README.md"
@@ -102,7 +106,7 @@ check() {
 }
 
 @test "a heading inside a code fence does not count" {
-  printf '\n```md\n## Not a heading\n```\n' >>"${SANDBOX}/README.md"
+  printf '\n%smd\n## Not a heading\n%s\n' "${fence}" "${fence}" >>"${SANDBOX}/README.md"
   check
   [ "${status}" -eq 0 ]
 }
@@ -115,7 +119,8 @@ check() {
 }
 
 @test "a template variable inside a code fence or inline code passes" {
-  printf '\n```text\n{{PROJECT_NAME}}\n```\n\nWrite `{{PROJECT_NAME}}` in the template.\n' >>"${SANDBOX}/README.md"
+  printf '\n%stext\n{{PROJECT_NAME}}\n%s\n\nWrite %s{{PROJECT_NAME}}%s in the template.\n' \
+    "${fence}" "${fence}" "${tick}" "${tick}" >>"${SANDBOX}/README.md"
   check
   [ "${status}" -eq 0 ]
 }
