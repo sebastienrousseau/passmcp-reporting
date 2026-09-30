@@ -37,6 +37,9 @@ module, this repository tags first.
 
 ### Fixed
 
+- **The published schemas name their copyright holder.** Each
+  `spec/**/*.schema.json` `$comment` said the licence and not whose
+  copyright it is; `scripts/specgen` now writes both.
 - **The copied ExtMcp proto carries its own copyright and licence.**
   `integrations/agentgateway-extmcp/proto/ext_mcp.proto` has an SPDX
   header naming the agentgateway authors and the upstream commit, and
