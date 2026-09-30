@@ -17,6 +17,10 @@ module, this repository tags first.
 
 ### Added
 
+- **How to verify a release**, in `docs/signing.md`: the SSH-signed
+  tags against the maintainer's published signing keys, the Go checksum
+  database, and the processor image's build provenance with
+  `gh attestation verify`, each command run against v0.0.4.
 - **A fuzz target for the A2A parser.** `a2a.FuzzParse` checks what
   `attestation.FuzzParse` and `graph.FuzzParse` already check for the
   other two formats: `Parse` never panics, and an accepted statement

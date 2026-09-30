@@ -53,6 +53,7 @@ nav:
   - The A2A evaluation: a2a.md
   - The security graph: graph.md
   - Benchmarks: BENCHMARKS.md
+  - Verifying a release: signing.md
   - Decision records:
       - Index: adr/README.md
       - 0001 The verifier in its own module: adr/0001-verifier-in-its-own-module.md

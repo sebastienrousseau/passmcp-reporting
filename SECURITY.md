@@ -42,6 +42,10 @@ rather than taken on trust.
 - **The schema is derived from the types**, by `scripts/specgen`, and CI
   fails when the committed file drifts, so a consumer validating by
   schema and one validating by this package agree.
+- **Releases are signed.** Each release tag is an annotated tag signed
+  with the maintainer's SSH key, and the processor image carries SLSA
+  build provenance attested to its digest.
+  [docs/signing.md](docs/signing.md) shows how to verify both.
 - **Signatures are out of scope here.** This package checks the
   statement's structure and integrity. Whether the bytes came from who
   they claim is the job of the envelope around them — DSSE, cosign,

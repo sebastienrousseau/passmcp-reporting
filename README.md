@@ -323,6 +323,7 @@ The four entry points, identical across every repo in the family:
 | [`docs/a2a.md`](docs/a2a.md) | The A2A evaluation predicate |
 | [`docs/graph.md`](docs/graph.md) | The security graph's model and store |
 | [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) | What an admission decision costs |
+| [`docs/signing.md`](docs/signing.md) | Verifying a release: the signed tags, the Go checksum, the processor image's provenance |
 | [`docs/adr/`](docs/adr/README.md) | Decision records for this repository |
 | [`spec/`](spec/README.md) | The published schema, and where the rubric is |
 | [`SECURITY.md`](SECURITY.md) | Disclosure policy, supported versions, what is guaranteed |
