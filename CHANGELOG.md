@@ -13,6 +13,17 @@ a passmcp release, whatever changed in this tree, and a release here with
 nothing in it is the version rule working. Because passmcp imports this
 module, this repository tags first.
 
+## [Unreleased]
+
+### Fixed
+
+- **The processor tag's release run waits for its image.** Both tags are
+  pushed together, so that run could start before the root tag's run had
+  published the processor image and failed at once, although the page
+  was published correctly. It now waits up to 20 minutes for the image.
+- **The manual's footer links to the author**: "© 2026 Sebastien
+  Rousseau" to <https://sebastienrousseau.com/>.
+
 ## [0.0.4] — 2026-09-30
 
 ### Added
