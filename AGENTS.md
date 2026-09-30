@@ -15,6 +15,7 @@ every CI gate.
 | 85% statement coverage, every package with statements | `go test ./... -cover` |
 | Race detector, randomised order | `make test-race` |
 | Lint at zero findings | `make lint` |
+| No function over 10/15/60, no file over 500 lines, beyond the baseline, which only shrinks | `make complexity` |
 | SPDX header on every source file | `make spdx-check` |
 | The schema matches the types | `make spec-verify` |
 | The example verifies the fixture | `make example-check` |

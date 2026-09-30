@@ -52,7 +52,7 @@ The README's toolchain badge states the same floor, and
 | Test (three OSes × two Go versions) | `make test` |
 | Race & Shuffled Tests | `make test-race` |
 | Coverage Gate (85% per package) | `make coverage` |
-| Lint | `gofmt -l .` and `make lint` |
+| Lint | `gofmt -l .`, `make lint` and `make complexity` |
 | Vulnerability Scan | `make vulncheck`: the root module, and the processor with `GOWORK=off` |
 | API Compatibility | `make api-check`, against the last root release before HEAD |
 | Script Tests | `make test-scripts` (needs `bats`) |
@@ -81,6 +81,31 @@ its own CI job and is not in this figure.
 ```sh
 make coverage-badge   # writes coverage.json; the figure CI publishes
 ```
+
+## Complexity
+
+Every function is held to cyclomatic complexity 10, cognitive complexity
+15 and 60 lines (with at most 50 statements), and every hand-written Go
+file to 500 lines: the portfolio's ceilings. The function ceilings are
+the `gocyclo`, `gocognit` and `funlen` settings in `.golangci.yml`; tests
+are exempt, by the same file's exclusions. The functions already over
+them when the ceilings were lowered are listed, with their measure, in
+[`scripts/complexity-baseline.txt`](scripts/complexity-baseline.txt).
+`make complexity` (`scripts/complexity.sh`, the Lint job's last step)
+runs the three linters in the root module and the processor's and fails
+on:
+
+- a function or file over a ceiling that the baseline does not list;
+- a listed one whose measure grew;
+- a listed one that improved, or is now within its ceiling, while the
+  baseline still says otherwise.
+
+The baseline only shrinks. After bringing a function down, run
+`scripts/complexity.sh --update` and commit the baseline with the change;
+`--update` refuses to record a new or worse offender, and the fix for one
+is to split the function, never an entry or a `//nolint`. The three
+linters are not in `make lint`'s enabled set for that reason: there they
+would fail on the listed backlog.
 
 ## Generated artefacts
 

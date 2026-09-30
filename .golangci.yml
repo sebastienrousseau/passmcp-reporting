@@ -17,20 +17,23 @@ linters:
     # hold in their head, and in a verifier that is where a wrong verdict
     # hides. maintidx folds Halstead volume, cyclomatic complexity and
     # length into one maintainability index.
-    - gocyclo
-    - gocognit
+    #
+    # gocyclo, gocognit and funlen are configured below but not enabled
+    # here: scripts/complexity.sh (make complexity) runs them against the
+    # committed baseline of functions already over the portfolio ceilings,
+    # which may only shrink. Enabling them here would fail on that backlog,
+    # and silencing it would take a suppression per function.
     - nestif
-    - funlen
     - maintidx
   settings:
     gocyclo:
-      min-complexity: 15
+      min-complexity: 10
     gocognit:
-      min-complexity: 20
+      min-complexity: 15
     nestif:
       min-complexity: 5
     funlen:
-      lines: 80
+      lines: 60
       statements: 50
     maintidx:
       under: 20

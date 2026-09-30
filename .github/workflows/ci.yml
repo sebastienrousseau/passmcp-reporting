@@ -122,6 +122,13 @@ jobs:
         with:
           version: v2.13.2
           args: ./...
+      # The action above put golangci-lint on PATH. The complexity
+      # linters run here, against the committed baseline, in both
+      # modules; see scripts/complexity.sh.
+      - name: Complexity ceilings, against the baseline
+        env:
+          GOTOOLCHAIN: auto
+        run: make complexity
 
   vulncheck:
     name: Vulnerability Scan

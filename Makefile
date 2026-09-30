@@ -3,10 +3,10 @@
 
 .PHONY: all build test test-race coverage coverage-badge vet lint format spdx-check spec spec-verify readme-check \
         example-check integrations lockstep family api-check apidoc help name-guard release-versions demo \
-        test-scripts tools vulncheck
+        test-scripts tools vulncheck complexity
 
 # Every gate CI runs, in the order the cheap ones fail first.
-all: format vet lint spdx-check spec-verify example-check test integrations
+all: format vet lint complexity spdx-check spec-verify example-check test integrations
 
 build:
 	go build ./...
@@ -38,6 +38,13 @@ lint:
 
 format:
 	gofmt -l -w .
+
+# Cyclomatic 10, cognitive 15 and 60 lines per function (.golangci.yml),
+# and 500 lines per hand-written Go file, in both modules, against the
+# committed baseline in scripts/complexity-baseline.txt, which may only
+# shrink. scripts/complexity.sh --update records an improvement.
+complexity:
+	scripts/complexity.sh
 
 # The README follows the portfolio template: headings in order, no
 # unresolved {{VARIABLES}} (AGENTS.md §7.3).
@@ -121,7 +128,7 @@ test-scripts:
 	bats scripts/test
 
 help:
-	@printf '%s\n' "targets: all build test test-race coverage coverage-badge vet lint format spdx-check spec spec-verify example-check integrations lockstep family api-check apidoc readme-check name-guard release-versions demo test-scripts tools vulncheck"
+	@printf '%s\n' "targets: all build test test-race coverage coverage-badge vet lint format spdx-check spec spec-verify example-check integrations lockstep family api-check apidoc readme-check name-guard release-versions demo test-scripts tools vulncheck complexity"
 
 # The project was renamed to passmcp: the old name may appear only in the
 # provenance line (scripts/name-guard.sh).
