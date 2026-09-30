@@ -184,13 +184,16 @@ by the standard library; nothing sets `InsecureSkipVerify`.
 With `-tls-cert` and `-tls-key` the listener serves TLS 1.2 or 1.3
 only; naming one without the other, or a key that does not match, stops
 the process before it listens. Without them it is plaintext and, by
-default, bound to `127.0.0.1`.
+default, bound to `127.0.0.1`. A reload re-reads the key pair; one that
+does not load is logged and the certificate in service stays, so a
+rotation caught half-written never leaves the listener without one.
 
 - Code: `cmd/agentgateway-extmcp/tls.go`.
 - Evidence: `TestRunServesOverTLS`, `TestTLSConfigFloorIsTLS12`,
   `TestTLSListenerRefusesOldVersionsAndPlaintext`,
   `TestServerTLSRefusesAnIncompletePair`,
-  `TestRunRefusesAHalfTLSConfigurationBeforeListening`.
+  `TestRunRefusesAHalfTLSConfigurationBeforeListening`,
+  `TestTLSKeyPairReloads`, `TestSIGHUPReloadsTheKeyPair`.
 - Residual: the processor does not authenticate its clients (no mutual
   TLS). Its answers carry a decision and a score, no secret. The
   container image listens on `0.0.0.0` in plaintext unless given a key

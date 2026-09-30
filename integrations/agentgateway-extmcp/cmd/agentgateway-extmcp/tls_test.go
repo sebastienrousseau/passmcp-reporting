@@ -157,28 +157,134 @@ func TestServerTLSRefusesAnIncompletePair(t *testing.T) {
 		"key of another one": {certFile, otherKey, "-tls-cert/-tls-key"},
 	} {
 		t.Run(name, func(t *testing.T) {
-			if _, err := serverTLS(tc.cert, tc.key); err == nil || !strings.Contains(err.Error(), tc.want) {
+			if _, _, err := serverTLS(tc.cert, tc.key); err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("err = %v, want it to mention %q", err, tc.want)
 			}
 		})
 	}
-	if opts, err := serverTLS("", ""); err != nil || opts != nil {
-		t.Errorf("no TLS flags: opts = %v, err = %v; want plaintext with no options", opts, err)
+	if opts, kp, err := serverTLS("", ""); err != nil || opts != nil || kp != nil {
+		t.Errorf("no TLS flags: opts = %v, pair = %v, err = %v; want plaintext with no options", opts, kp, err)
 	}
 }
 
 func TestTLSConfigFloorIsTLS12(t *testing.T) {
 	certFile, keyFile, _ := keyPair(t, t.TempDir(), "server")
-	cfg, err := tlsConfig(certFile, keyFile)
+	cfg, _, err := tlsConfig(certFile, keyFile)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if cfg.MinVersion != tls.VersionTLS12 {
 		t.Errorf("MinVersion = %#x, want TLS 1.2 (%#x)", cfg.MinVersion, tls.VersionTLS12)
 	}
-	if len(cfg.Certificates) != 1 {
-		t.Errorf("serves %d certificates, want the one configured", len(cfg.Certificates))
+	if cfg.GetCertificate == nil {
+		t.Fatal("no GetCertificate: the key pair could not be swapped on reload")
 	}
+	got, err := cfg.GetCertificate(&tls.ClientHelloInfo{})
+	if err != nil || got == nil || len(got.Certificate) != 1 {
+		t.Errorf("GetCertificate = %v, %v; want the one configured", got, err)
+	}
+}
+
+// startTLS runs the command with the key pair at certFile and keyFile and
+// extra flags, and returns its address and its diagnostics.
+func startTLS(t *testing.T, certFile, keyFile string, extra ...string) (net.Addr, *lockedBuffer) {
+	t.Helper()
+	dir := t.TempDir()
+	cfg := config(t, dir, statement(t, dir, 88))
+	ctx, cancel := context.WithCancel(context.Background())
+	ready := make(chan net.Addr, 1)
+	done := make(chan error, 1)
+	stderr := &lockedBuffer{}
+	args := append([]string{"-config", cfg, "-listen", "127.0.0.1:0", "-tls-cert", certFile, "-tls-key", keyFile}, extra...)
+	go func() { done <- run(ctx, args, stderr, ready) }()
+	t.Cleanup(func() {
+		cancel()
+		if err := <-done; err != nil {
+			t.Errorf("run: %v", err)
+		}
+	})
+	select {
+	case addr := <-ready:
+		return addr, stderr
+	case err := <-done:
+		t.Fatalf("run returned early: %v", err)
+		return nil, nil
+	}
+}
+
+// served opens a new TLS connection to addr, trusting roots, and returns
+// the leaf certificate the listener presented.
+func served(t *testing.T, addr net.Addr, roots ...*x509.Certificate) *x509.Certificate {
+	t.Helper()
+	pool := x509.NewCertPool()
+	for _, c := range roots {
+		pool.AddCert(c)
+	}
+	conn, err := tls.Dial("tcp", addr.String(), &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12, NextProtos: []string{"h2"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = conn.Close() }()
+	return conn.ConnectionState().PeerCertificates[0]
+}
+
+// copyFile replaces dst's contents with src's, as a certificate manager
+// rotating a key pair in place does.
+func copyFile(t *testing.T, src, dst string) {
+	t.Helper()
+	b, err := os.ReadFile(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(dst, b, 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// eventually polls cond until it holds or five seconds pass.
+func eventually(t *testing.T, what string, cond func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for !cond() {
+		if time.Now().After(deadline) {
+			t.Fatalf("%s never happened", what)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// TestTLSKeyPairReloads. A certificate rotated on disk is served to the
+// next connection without a restart; a key pair that does not load is
+// logged and the certificate already in service stays. The reload here is
+// -reload-interval's, so the test runs on every OS; TestSIGHUPReloadsTheKeyPair
+// sends the signal.
+func TestTLSKeyPairReloads(t *testing.T) {
+	dir := t.TempDir()
+	certFile, keyFile, first := keyPair(t, dir, "server")
+	secondCert, secondKey, second := keyPair(t, dir, "second")
+	addr, stderr := startTLS(t, certFile, keyFile, "-reload-interval", "20ms")
+	if got := served(t, addr, first, second); !got.Equal(first) {
+		t.Fatal("the listener does not serve the certificate it was started with")
+	}
+
+	// A key that does not match the certificate: refused, and the first
+	// certificate stays in service.
+	copyFile(t, secondKey, keyFile)
+	eventually(t, "a logged TLS reload failure", func() bool {
+		return strings.Contains(stderr.String(), "keeping the previous certificate")
+	})
+	if !strings.Contains(stderr.String(), "private key does not match public key") {
+		t.Errorf("the log does not name the failure:\n%s", stderr.String())
+	}
+	if got := served(t, addr, first, second); !got.Equal(first) {
+		t.Fatal("a key pair that does not load replaced the certificate in service")
+	}
+
+	// The matching certificate arrives: the next connection sees it.
+	copyFile(t, secondCert, certFile)
+	eventually(t, "the second certificate being served", func() bool {
+		return served(t, addr, first, second).Equal(second)
+	})
 }
 
 func TestRunRefusesAHalfTLSConfigurationBeforeListening(t *testing.T) {

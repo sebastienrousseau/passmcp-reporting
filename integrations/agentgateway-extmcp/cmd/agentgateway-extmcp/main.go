@@ -9,9 +9,10 @@
 //
 // The configuration and every attestation it names are loaded before the
 // listener opens, so a processor that is up is one that has decided what
-// it will say. SIGHUP reloads both; -reload-interval does so on a timer.
-// With -tls-cert and -tls-key the listener speaks TLS 1.2 or later;
-// without them it is plaintext, for loopback or a private network.
+// it will say. SIGHUP reloads both, and the TLS key pair when there is one;
+// -reload-interval does so on a timer. With -tls-cert and -tls-key the
+// listener speaks TLS 1.2 or later; without them it is plaintext, for
+// loopback or a private network.
 // Diagnostics go to stderr as JSON lines.
 package main
 
@@ -71,21 +72,30 @@ func flagSet(stderr io.Writer, o *options) *flag.FlagSet {
 	return fs
 }
 
+// prepared is what prepare builds: the logger, the listener's transport
+// credentials, and the key pair behind them, nil for plaintext.
+type prepared struct {
+	log   *slog.Logger
+	creds []grpc.ServerOption
+	certs *certPair
+}
+
 // prepare checks what parsing cannot, and builds the logger and the
 // listener's transport credentials, before anything is loaded or bound.
-func (o *options) prepare(stderr io.Writer) (*slog.Logger, []grpc.ServerOption, error) {
+func (o *options) prepare(stderr io.Writer) (*prepared, error) {
 	if o.config == "" {
-		return nil, nil, errors.New("-config is required")
+		return nil, errors.New("-config is required")
 	}
 	var lvl slog.Level
 	if err := lvl.UnmarshalText([]byte(o.level)); err != nil {
-		return nil, nil, fmt.Errorf("-log-level: %w", err)
+		return nil, fmt.Errorf("-log-level: %w", err)
 	}
-	creds, err := serverTLS(o.tlsCert, o.tlsKey)
+	creds, certs, err := serverTLS(o.tlsCert, o.tlsKey)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return slog.New(slog.NewJSONHandler(stderr, &slog.HandlerOptions{Level: lvl})), creds, nil
+	log := slog.New(slog.NewJSONHandler(stderr, &slog.HandlerOptions{Level: lvl}))
+	return &prepared{log: log, creds: creds, certs: certs}, nil
 }
 
 // run is main without the process: ready is signalled with the bound
@@ -99,10 +109,11 @@ func run(ctx context.Context, args []string, stderr io.Writer, ready chan<- net.
 	if o.completion != "" {
 		return writeCompletion(stdout, fs, o.completion)
 	}
-	log, creds, err := o.prepare(stderr)
+	p, err := o.prepare(stderr)
 	if err != nil {
 		return err
 	}
+	log := p.log
 
 	// SIGHUP's handler goes in before anything can announce the process:
 	// until signal.Notify runs, a hangup takes the default action and kills
@@ -120,13 +131,14 @@ func run(ctx context.Context, args []string, stderr io.Writer, ready chan<- net.
 	if err != nil {
 		return err
 	}
-	srv := grpc.NewServer(creds...)
+	srv := grpc.NewServer(p.creds...)
 	extmcp.RegisterExtMcpServer(srv, processor.NewServer(store, log))
-	log.Info("listening", "addr", lis.Addr().String(), "config", o.config, "tls", len(creds) > 0)
+	log.Info("listening", "addr", lis.Addr().String(), "config", o.config, "tls", p.certs != nil)
 	if ready != nil {
 		ready <- lis.Addr()
 	}
-	return serve(ctx, srv, lis, func(rctx context.Context) { reloadOn(rctx, store, log, o.interval, hup) })
+	r := reloader{store: store, certs: p.certs, log: log}
+	return serve(ctx, srv, lis, func(rctx context.Context) { r.on(rctx, o.interval, hup) })
 }
 
 // serve runs srv on lis, and reload beside it, until ctx ends or the
@@ -149,10 +161,18 @@ func serve(ctx context.Context, srv *grpc.Server, lis net.Listener, reload func(
 	}
 }
 
-// reloadOn reloads the store on SIGHUP and, when interval is positive, on
-// a timer. A reload that fails is logged and the last good snapshot stays
-// in service: a broken edit must not take the gate down.
-func reloadOn(ctx context.Context, store *processor.Store, log *slog.Logger, interval time.Duration, hup <-chan os.Signal) {
+// reloader is what a reload re-reads: the store and, on a TLS listener,
+// the key pair.
+type reloader struct {
+	store *processor.Store
+	certs *certPair
+	log   *slog.Logger
+}
+
+// on reloads on SIGHUP and, when interval is positive, on a timer. A reload
+// that fails is logged and the last good snapshot, or certificate, stays in
+// service: a broken edit must not take the gate down.
+func (r reloader) on(ctx context.Context, interval time.Duration, hup <-chan os.Signal) {
 	var tick <-chan time.Time
 	if interval > 0 {
 		t := time.NewTicker(interval)
@@ -169,10 +189,25 @@ func reloadOn(ctx context.Context, store *processor.Store, log *slog.Logger, int
 		case <-tick:
 			why = "interval"
 		}
-		if err := store.Reload(ctx); err != nil {
-			log.Error("reload failed; keeping the previous configuration", "trigger", why, "error", err.Error())
-			continue
-		}
-		log.Info("reloaded", "trigger", why)
+		r.reload(ctx, why)
 	}
+}
+
+// reload re-reads the store and the key pair once. Each is independent: a
+// configuration that does not parse does not stop a rotated certificate
+// being served, nor the reverse.
+func (r reloader) reload(ctx context.Context, why string) {
+	if err := r.store.Reload(ctx); err != nil {
+		r.log.Error("reload failed; keeping the previous configuration", "trigger", why, "error", err.Error())
+	} else {
+		r.log.Info("reloaded", "trigger", why)
+	}
+	if r.certs == nil {
+		return
+	}
+	if err := r.certs.reload(); err != nil {
+		r.log.Error("TLS key pair reload failed; keeping the previous certificate", "trigger", why, "error", err.Error())
+		return
+	}
+	r.log.Info("reloaded the TLS key pair", "trigger", why)
 }

@@ -117,9 +117,14 @@ agentgateway-extmcp -config config.json -listen 0.0.0.0:4400 \
   listening is one that is serving TLS.
 - The listener accepts TLS 1.2 and 1.3, nothing older. The cipher suites
   are the Go standard library's defaults.
-- The key pair is read once at startup. Restart the processor to rotate
-  it; `SIGHUP` reloads the configuration and the attestations, not the
-  certificate.
+- The key pair is reloaded without a restart. `SIGHUP`, and each
+  `-reload-interval` tick, re-read both files along with the
+  configuration and the attestations; the next connection is served the
+  new certificate, and connections already open keep theirs. A pair that
+  does not load on reload (a key that does not match, a file caught
+  half-written) is logged and the certificate in service stays, so
+  rotating with cert-manager or an ACME client needs no restart and no
+  gap in the gate.
 - The processor does not authenticate its clients: there is no mutual
   TLS. Restrict who can reach the port with the network, as for any
   internal gRPC service.
