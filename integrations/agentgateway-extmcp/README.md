@@ -32,14 +32,28 @@ For each backend named in `McpRequest.service_names`, in order:
 | Any verdict with `status: fail` whose phase is in `denyFailIn` | deny `failing checks in category X (ids)` |
 | Otherwise | `Pass`; scores ride along in the result's `metadata` under `passmcp.<target>` |
 
-Denials are `AuthorizationError` with code `PERMISSION_DENIED`, which the
-gateway turns into JSON-RPC error `-32001` carrying the reason.
+Denials are `AuthorizationError` with code `PERMISSION_DENIED` and the
+reason. What the MCP client receives depends on the method:
+
+- **`tools/call`**: a successful JSON-RPC response whose result is a
+  tool error, `isError: true`, with the reason as its text content. The
+  model reads why the call was refused, as it would any failed tool.
+- **Every other method**: JSON-RPC error `-32001` carrying the reason.
+
+That is agentgateway's mapping, not this processor's: `translate_error`
+in `crates/agentgateway/src/mcp/guardrails/client.rs` turns
+`PERMISSION_DENIED` into `-32001`, and `jsonrpc_error_body` in
+`crates/agentgateway/src/mcp/mod.rs` rewrites a rejected `tools/call`
+through `tool_error_body` (agentgateway commit `ff8685e`). A client that
+looks only for JSON-RPC errors will not see a denied tool call as one.
+
 `CheckResponse` always passes: the attestation is about the server, not
 about one response.
 
 A processor with no configuration loaded answers with gRPC `UNAVAILABLE`
 rather than a decision, so the gateway's `failureMode` decides what
-happens, not this code.
+happens, not this code. Under `failClosed` the gateway reports that as a
+JSON-RPC internal error, for `tools/call` too.
 
 ## Running it
 

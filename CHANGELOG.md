@@ -24,6 +24,10 @@ module, this repository tags first.
 
 ### Fixed
 
+- **The processor's README describes what a denial looks like.** It
+  said every denial reaches the MCP client as JSON-RPC error `-32001`;
+  current agentgateway answers a denied `tools/call` with an `isError`
+  tool result carrying the reason, and uses `-32001` for other methods.
 - **The API Compatibility check passes on main after a release.** It
   compared HEAD with the tag on HEAD itself, and failed whenever gorelease
   could not suggest a version because the module proxy did not yet list
