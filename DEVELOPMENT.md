@@ -16,11 +16,30 @@ file.
 | make | any | Task runner for everything below |
 
 Optional, only for the gate that uses it: `golangci-lint` (`make lint`),
+`golangci-lint` and `jq` (`make complexity`),
+`bats`, `jq` and `python3` (`make test-scripts`),
 `markdownlint-cli2`, `codespell` and `lychee` (the Docs Lint workflow and
 `pre-commit`), `curl` and `python3` (`make family`, `make lockstep`).
 
 There is no dependency to download: `go.mod` has no `require` directive,
 and keeping it that way is a rule, not a coincidence.
+
+The Go tools CI runs besides the linter, `govulncheck` and `gorelease`,
+are pinned in [`tools/go.mod`](tools/go.mod) with `tool` directives, a
+module of its own outside the workspace so that nothing it requires
+reaches the root module or the processor. `make tools` builds them into
+`build/tools`; `make vulncheck` and `make api-check` use them. Dependabot
+opens the bumps for `/tools` weekly. To bump by hand, or when Dependabot
+does not offer one (gorelease lives in `golang.org/x/exp`, which has no
+tagged releases, only pseudo-versions):
+
+```sh
+cd tools && GOWORK=off go get -tool golang.org/x/exp/cmd/gorelease@latest && GOWORK=off go mod tidy
+cd tools && GOWORK=off go get -tool golang.org/x/vuln/cmd/govulncheck@latest && GOWORK=off go mod tidy
+```
+
+`golangci-lint` is pinned by version in `ci.yml` and in
+`.devcontainer/post-create.sh`; change both together.
 
 The README's toolchain badge states the same floor, and
 `scripts/readme-check.sh` fails when the two disagree. A
@@ -34,9 +53,10 @@ The README's toolchain badge states the same floor, and
 | Test (three OSes × two Go versions) | `make test` |
 | Race & Shuffled Tests | `make test-race` |
 | Coverage Gate (85% per package) | `make coverage` |
-| Lint | `gofmt -l .` and `make lint` |
-| Vulnerability Scan | `go run golang.org/x/vuln/cmd/govulncheck@latest ./...`, and again in `integrations/agentgateway-extmcp` with `GOWORK=off` |
-| API Compatibility | `make api-check` |
+| Lint | `gofmt -l .`, `make lint` and `make complexity` |
+| Vulnerability Scan | `make vulncheck`: the root module, and the processor with `GOWORK=off` |
+| API Compatibility | `make api-check`, against the last root release before HEAD |
+| Script Tests | `make test-scripts` (needs `bats`) |
 | Repository Checks | `make apidoc spec-verify example-check release-versions family lockstep` |
 | Licence Headers | `make spdx-check` |
 | Markdown & Spelling | `make readme-check`, `markdownlint-cli2 '**/*.md'` and `codespell` |
@@ -62,6 +82,31 @@ its own CI job and is not in this figure.
 ```sh
 make coverage-badge   # writes coverage.json; the figure CI publishes
 ```
+
+## Complexity
+
+Every function is held to cyclomatic complexity 10, cognitive complexity
+15 and 60 lines (with at most 50 statements), and every hand-written Go
+file to 500 lines: the portfolio's ceilings. The function ceilings are
+the `gocyclo`, `gocognit` and `funlen` settings in `.golangci.yml`; tests
+are exempt, by the same file's exclusions. The functions already over
+them when the ceilings were lowered are listed, with their measure, in
+[`scripts/complexity-baseline.txt`](scripts/complexity-baseline.txt).
+`make complexity` (`scripts/complexity.sh`, the Lint job's last step)
+runs the three linters in the root module and the processor's and fails
+on:
+
+- a function or file over a ceiling that the baseline does not list;
+- a listed one whose measure grew;
+- a listed one that improved, or is now within its ceiling, while the
+  baseline still says otherwise.
+
+The baseline only shrinks. After bringing a function down, run
+`scripts/complexity.sh --update` and commit the baseline with the change;
+`--update` refuses to record a new or worse offender, and the fix for one
+is to split the function, never an entry or a `//nolint`. The three
+linters are not in `make lint`'s enabled set for that reason: there they
+would fail on the listed backlog.
 
 ## Generated artefacts
 

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -28,7 +29,8 @@ const DefaultTimeout = 10 * time.Second
 // network, and it does so at load time, never on the request path.
 type Loader struct {
 	// Client makes https requests; nil uses http.DefaultClient. Tests
-	// inject one that trusts their server's certificate.
+	// inject one that trusts their server's certificate. Either way a
+	// redirect is followed only to another https URL.
 	Client *http.Client
 	// MaxBytes caps a statement's size; zero means DefaultMaxBytes.
 	MaxBytes int64
@@ -66,31 +68,63 @@ func (l *Loader) read(path string) ([]byte, error) {
 	return l.capped(f)
 }
 
-func (l *Loader) fetch(ctx context.Context, url string) ([]byte, error) {
+func (l *Loader) fetch(ctx context.Context, source string) ([]byte, error) {
 	timeout := l.Timeout
 	if timeout == 0 {
 		timeout = DefaultTimeout
 	}
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, source, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/json")
-	client := l.Client
-	if client == nil {
-		client = http.DefaultClient
-	}
-	resp, err := client.Do(req)
+	resp, err := l.client().Do(req)
 	if err != nil {
-		return nil, err
+		// A *url.Error repeats the URL, and this error becomes the reason
+		// sent to MCP clients; a presigned URL's query is a credential.
+		var uerr *url.Error
+		if errors.As(err, &uerr) {
+			err = uerr.Err
+		}
+		return nil, fmt.Errorf("fetch: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("fetch: %s", resp.Status)
 	}
 	return l.capped(resp.Body)
+}
+
+// maxRedirects is how many redirects one fetch follows, the net/http
+// default.
+const maxRedirects = 10
+
+// client is the configured client, or http.DefaultClient, copied so that
+// it follows a redirect only to another https URL. Accepting only https
+// sources would mean nothing if an https origin could hand the fetch to
+// plain http, where the statement can be swapped in transit. The client
+// passed in is not modified.
+func (l *Loader) client() *http.Client {
+	c := *http.DefaultClient
+	if l.Client != nil {
+		c = *l.Client
+	}
+	next := c.CheckRedirect
+	c.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if req.URL.Scheme != "https" {
+			return errors.New("redirected off https: only https URLs are accepted")
+		}
+		if next != nil {
+			return next(req, via)
+		}
+		if len(via) >= maxRedirects {
+			return fmt.Errorf("stopped after %d redirects", maxRedirects)
+		}
+		return nil
+	}
+	return &c
 }
 
 // capped reads r in full, refusing anything past MaxBytes rather than

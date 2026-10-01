@@ -6,12 +6,10 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"net"
 	"os"
 	"strings"
-	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -71,21 +69,24 @@ func TestSIGHUPReloads(t *testing.T) {
 	}
 }
 
-// lockedBuffer is a bytes.Buffer safe to read while run is still writing
-// to it from another goroutine.
-type lockedBuffer struct {
-	mu  sync.Mutex
-	buf bytes.Buffer
-}
-
-func (b *lockedBuffer) Write(p []byte) (int, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	return b.buf.Write(p)
-}
-
-func (b *lockedBuffer) String() string {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	return b.buf.String()
+// TestSIGHUPReloadsTheKeyPair sends a real SIGHUP after the key pair is
+// replaced on disk and expects the next connection to see the new
+// certificate.
+func TestSIGHUPReloadsTheKeyPair(t *testing.T) {
+	dir := t.TempDir()
+	certFile, keyFile, first := keyPair(t, dir, "server")
+	secondCert, secondKey, second := keyPair(t, dir, "second")
+	addr, stderr := startTLS(t, certFile, keyFile)
+	copyFile(t, secondCert, certFile)
+	copyFile(t, secondKey, keyFile)
+	eventually(t, "the second certificate being served after SIGHUP", func() bool {
+		if err := syscall.Kill(os.Getpid(), syscall.SIGHUP); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(20 * time.Millisecond)
+		return served(t, addr, first, second).Equal(second)
+	})
+	if !strings.Contains(stderr.String(), `"msg":"reloaded the TLS key pair","trigger":"SIGHUP"`) {
+		t.Errorf("stderr lacks the TLS reload line:\n%s", stderr.String())
+	}
 }

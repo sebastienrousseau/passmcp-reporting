@@ -17,6 +17,7 @@
   <a href="https://github.com/sebastienrousseau/passmcp-reporting/releases"><img src="https://img.shields.io/github/v/release/sebastienrousseau/passmcp-reporting?style=for-the-badge&color=fc8d62&logo=github&label=Release" alt="Release" /></a>
   <a href="https://pkg.go.dev/satellion.com/passmcp-reporting"><img src="https://img.shields.io/badge/go.dev-reference-007d9c?style=for-the-badge&labelColor=555555&logo=go&logoColor=white" alt="Docs" /></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/sebastienrousseau/passmcp-reporting"><img src="https://img.shields.io/ossf-scorecard/github.com/sebastienrousseau/passmcp-reporting?style=for-the-badge&label=OpenSSF%20Scorecard&logo=openssf" alt="OpenSSF Scorecard" /></a>
+  <a href="https://www.bestpractices.dev/projects/15109"><img src="https://www.bestpractices.dev/projects/15109/badge" alt="OpenSSF Best Practices" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg?style=for-the-badge" alt="License: Apache-2.0" /></a>
   <a href="https://github.com/sebastienrousseau/passmcp-reporting/blob/main/DEVELOPMENT.md#requirements"><img src="https://img.shields.io/badge/go-1.26.8%2B-93450a.svg?style=for-the-badge&logo=go" alt="Go 1.26.8+" /></a>
 </p>
@@ -64,7 +65,7 @@
 ### As a Go library
 
 ```sh
-go get satellion.com/passmcp-reporting@v0.0.4
+go get satellion.com/passmcp-reporting@v0.0.5
 ```
 
 The module has no dependencies: adding it adds one line to `go.sum`.
@@ -136,7 +137,7 @@ it, and checking the signature, is the envelope's job — see
 
 ## The passmcp-reporting ecosystem
 
-Every component is released at **0.0.4** and moves in lockstep: one version across the family, released together ([docs/ecosystem.md](https://github.com/sebastienrousseau/passmcp/blob/main/docs/ecosystem.md)).
+Every component is released at **0.0.5** and moves in lockstep: one version across the family, released together ([docs/ecosystem.md](https://github.com/sebastienrousseau/passmcp/blob/main/docs/ecosystem.md)).
 
 | Component | Purpose | Use case |
 | :--- | :--- | :--- |
@@ -297,10 +298,14 @@ them. `spec/attestation/` is generated and never edited by hand.
 
 `Validate` recomputes the subject digest and refuses a rewritten subject, a
 second subject, a score without its rubric, or a predicate of another
-type; each refusal is a test. The package imports only the standard
-library, opens no file and no connection, and CI runs `govulncheck` on
-every push. What it does not check is a signature: that is the envelope
-around the statement, and a consumer must verify both.
+type; each refusal is a test. The verifier imports only the standard
+library and opens no file and no connection; the agentgateway processor,
+a network service with its own dependencies, is modelled separately.
+CI runs `govulncheck` on both modules on every push. What the verifier
+does not check is a signature: that is the envelope around the
+statement, and a consumer must verify both. The threat model and the
+latest security review are in [`docs/security-model.md`](docs/security-model.md);
+verifying a release is [`docs/signing.md`](docs/signing.md).
 
 Report vulnerabilities according to [`SECURITY.md`](SECURITY.md).
 
@@ -323,11 +328,14 @@ The four entry points, identical across every repo in the family:
 | [`docs/a2a.md`](docs/a2a.md) | The A2A evaluation predicate |
 | [`docs/graph.md`](docs/graph.md) | The security graph's model and store |
 | [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) | What an admission decision costs |
+| [`docs/security-model.md`](docs/security-model.md) | Threat model, trust boundaries, how common weaknesses are countered, and the latest security review |
+| [`docs/signing.md`](docs/signing.md) | Verifying a release: the signed tags, the Go checksum, the processor image's provenance |
 | [`docs/adr/`](docs/adr/README.md) | Decision records for this repository |
 | [`spec/`](spec/README.md) | The published schema, and where the rubric is |
 | [`SECURITY.md`](SECURITY.md) | Disclosure policy, supported versions, what is guaranteed |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Signed-commit and DCO policy, what a format change needs |
 | [`CHANGELOG.md`](CHANGELOG.md) | Per-release notes, and the lockstep version rule |
+| [`ROADMAP.md`](ROADMAP.md) | The next twelve months: what this repository intends to do, and what it will not |
 | [`SUPPORT.md`](SUPPORT.md) | Where to ask, and what to expect |
 
 ---

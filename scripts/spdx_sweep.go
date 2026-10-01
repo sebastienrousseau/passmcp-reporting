@@ -63,7 +63,7 @@ func wants(path string) bool {
 		return false
 	}
 	switch filepath.Ext(path) {
-	case ".go", ".sh", ".yml", ".yaml", ".md", ".toml", ".jsonc", ".nix", ".svg":
+	case ".go", ".proto", ".sh", ".bash", ".bats", ".yml", ".yaml", ".md", ".toml", ".jsonc", ".nix", ".svg":
 		return true
 	}
 	return base == "Makefile" || base == "GNUmakefile" || base == "Dockerfile" || strings.HasPrefix(base, ".editorconfig")

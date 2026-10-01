@@ -15,7 +15,7 @@ import (
 var completionShells = []string{"bash", "fish", "zsh"}
 
 // pathFlags take a file path, so the shell completes file names for them.
-var pathFlags = map[string]bool{"config": true}
+var pathFlags = map[string]bool{"config": true, "tls-cert": true, "tls-key": true}
 
 // valueFlags take one of a fixed set of words.
 var valueFlags = map[string][]string{

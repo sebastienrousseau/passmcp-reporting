@@ -22,7 +22,7 @@ func completionFor(t *testing.T, shell string) (string, error) {
 }
 
 func TestCompletionCoversEveryFlagInEveryShell(t *testing.T) {
-	flags := []string{"config", "listen", "reload-interval", "max-bytes", "fetch-timeout", "log-level", "completion"}
+	flags := []string{"config", "listen", "reload-interval", "max-bytes", "fetch-timeout", "log-level", "tls-cert", "tls-key", "completion"}
 	for _, shell := range completionShells {
 		script, err := completionFor(t, shell)
 		if err != nil {
@@ -34,7 +34,7 @@ func TestCompletionCoversEveryFlagInEveryShell(t *testing.T) {
 			}
 		}
 		for _, want := range map[string][]string{
-			"bash": {"complete -F _agentgateway_extmcp agentgateway-extmcp", "-config) COMPREPLY=($(compgen -f", `-log-level) COMPREPLY=($(compgen -W "debug info warn error"`},
+			"bash": {"complete -F _agentgateway_extmcp agentgateway-extmcp", "-config) COMPREPLY=($(compgen -f", "-tls-key) COMPREPLY=($(compgen -f", `-log-level) COMPREPLY=($(compgen -W "debug info warn error"`},
 			"zsh":  {"#compdef agentgateway-extmcp", "'-config[", ":path:_files", ":value:(debug info warn error)"},
 			"fish": {"-o config", "-r -F", `-o log-level -d "debug, info, warn or error" -x -a "debug info warn error"`},
 		}[shell] {

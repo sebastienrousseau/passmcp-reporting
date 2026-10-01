@@ -24,10 +24,11 @@ vet:
 lint:
 	golangci-lint run --config ../../.golangci.yml ./...
 
-# Regenerate gen/extmcp from proto/ext_mcp.proto. buf compiles, the two
-# protoc plugins are fetched at pinned versions into a scratch GOBIN, and
-# the SPDX header the repository's spdx-check wants is prepended, since
-# protoc-gen-go has no option for one.
+# Regenerate gen/extmcp from proto/ext_mcp.proto. buf compiles and the two
+# protoc plugins are fetched at pinned versions into a scratch GOBIN. The
+# generated files' SPDX header is the proto's own: protoc-gen-go and
+# protoc-gen-go-grpc copy the comment above `syntax` to the top of what
+# they write, so the attribution has one source, the proto file.
 BUF        := go run github.com/bufbuild/buf/cmd/buf@v1.66.0
 GEN_GOBIN  := $(CURDIR)/build/bin
 generate:
@@ -35,16 +36,6 @@ generate:
 	GOBIN=$(GEN_GOBIN) go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.10
 	GOBIN=$(GEN_GOBIN) go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
 	PATH="$(GEN_GOBIN):$$PATH" $(BUF) generate
-	# REUSE-IgnoreStart: the lines below write a header, they are not one.
-	for f in gen/extmcp/*.pb.go; do \
-	  { printf '%s\n' \
-	      '// SPDX-FileCopyrightText: The agentgateway Authors <https://github.com/agentgateway/agentgateway>' \
-	      '// SPDX-License-Identifier: Apache-2.0' \
-	      '//' \
-	      '// Generated from proto/ext_mcp.proto (agentgateway commit 38fc45b); see proto/README.md.' \
-	      ''; cat "$$f"; } > "$$f.tmp" && mv "$$f.tmp" "$$f"; \
-	done
-	# REUSE-IgnoreEnd
 	gofmt -l gen/
 
 # Fail if the committed bindings differ from what generate produces.

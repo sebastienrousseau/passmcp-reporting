@@ -11,6 +11,29 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "chore(deps)"
+  # The agentgateway processor is its own module, with the dependencies
+  # the root does without (gRPC, protobuf), and is released as an image
+  # whose two base images are pinned by digest. Neither is under "/".
+  - package-ecosystem: "gomod"
+    directory: "/integrations/agentgateway-extmcp"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+  # The tools CI runs (govulncheck, gorelease), pinned in their own
+  # module so the pins are bumped here rather than floating at @latest.
+  - package-ecosystem: "gomod"
+    directory: "/tools"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+  - package-ecosystem: "docker"
+    directory: "/integrations/agentgateway-extmcp"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

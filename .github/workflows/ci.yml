@@ -122,6 +122,13 @@ jobs:
         with:
           version: v2.13.2
           args: ./...
+      # The action above put golangci-lint on PATH. The complexity
+      # linters run here, against the committed baseline, in both
+      # modules; see scripts/complexity.sh.
+      - name: Complexity ceilings, against the baseline
+        env:
+          GOTOOLCHAIN: auto
+        run: make complexity
 
   vulncheck:
     name: Vulnerability Scan
@@ -134,18 +141,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # govulncheck at the version tools/go.mod pins. ./... from the root
+      # does not reach the nested processor module, which is the one with
+      # dependencies; make vulncheck scans it too, as it is installed.
       - name: govulncheck
         env:
           GOTOOLCHAIN: auto
-        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
-      # ./... from the root does not reach the nested processor module,
-      # which is the one with dependencies; scan it as it is installed.
-      - name: govulncheck (agentgateway processor)
-        working-directory: integrations/agentgateway-extmcp
-        env:
-          GOTOOLCHAIN: auto
-          GOWORK: "off"
-        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+        run: make vulncheck
 
   api-compat:
     name: API Compatibility
@@ -163,6 +165,27 @@ jobs:
         env:
           GOTOOLCHAIN: auto
         run: make api-check
+
+  scripts:
+    name: Script Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The runner image's bats, from Ubuntu's archive; the tests stub the
+      # network and the clock, so they need nothing else.
+      - name: Install bats
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bats
+      - name: The shell scripts' regression tests
+        run: make test-scripts
 
   checks:
     name: Repository Checks

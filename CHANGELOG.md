@@ -13,6 +13,105 @@ a passmcp release, whatever changed in this tree, and a release here with
 nothing in it is the version rule working. Because passmcp imports this
 module, this repository tags first.
 
+## [0.0.5] — 2026-10-01
+
+### Added
+
+- **A roadmap**, `ROADMAP.md`: the maintainer's current intent for the
+  next twelve months and what the repository will not do, each line
+  linked to the decision it comes from.
+- **The security model and assurance case**, in
+  `docs/security-model.md`: the threat model, the trust boundaries of
+  the verifier and of the processor, the secure design principles and
+  common weaknesses with the test that counters each, and the security
+  review of 2026-09-30 with its findings.
+- **How to verify a release**, in `docs/signing.md`: the SSH-signed
+  tags against the maintainer's published signing keys, the Go checksum
+  database, and the processor image's build provenance with
+  `gh attestation verify`, each command run against v0.0.4.
+- **A fuzz target for the A2A parser.** `a2a.FuzzParse` checks what
+  `attestation.FuzzParse` and `graph.FuzzParse` already check for the
+  other two formats: `Parse` never panics, and an accepted statement
+  covers its own agent and survives `Marshal` byte for byte.
+- **The agentgateway processor serves TLS.** `-tls-cert` and `-tls-key`
+  put its gRPC listener behind TLS 1.2 or later; without them it stays
+  plaintext, for loopback. A certificate without its key, or a key that
+  does not match, is refused before the processor listens.
+
+- **The processor reloads its TLS key pair without a restart**
+  ([#12](https://github.com/sebastienrousseau/passmcp-reporting/issues/12)).
+  `SIGHUP` and `-reload-interval` re-read `-tls-cert` and `-tls-key`
+  with the configuration and the attestations; the next connection is
+  served the new certificate. A pair that does not load is logged and
+  the certificate in service stays, so rotating with cert-manager or an
+  ACME client no longer opens a gap in the gate.
+- **Tests for `scripts/readme-check.sh`**
+  ([#11](https://github.com/sebastienrousseau/passmcp-reporting/issues/11)).
+  `scripts/test/readme-check.bats` has a case for every rule the script
+  enforces, each shown to fail when that rule is taken out of the
+  script.
+- **A complexity gate that only ratchets down.** `make complexity`
+  holds every function to cyclomatic 10, cognitive 15 and 60 lines, and
+  every hand-written Go file to 500 lines, against
+  `scripts/complexity-baseline.txt`, the five functions already over;
+  a new or worse offender fails, and so does a fixed one left in the
+  baseline. It runs as the Lint job's last step.
+
+### Changed
+
+- **The complexity ceilings in `.golangci.yml` are the portfolio's**:
+  `gocyclo` 10 (was 15), `gocognit` 15 (was 20), `funlen` 60 lines (was
+  80). The three run in `make complexity` rather than `make lint`.
+- **CI's tools are pinned.** `govulncheck` (v1.8.0) and `gorelease`
+  are built from `tools/go.mod` instead of `@latest`, so a check no
+  longer changes with a release nobody reviewed; Dependabot proposes the
+  bumps. `make vulncheck` runs the scan locally as CI does. This closes
+  SR-11 in the security review.
+
+### Fixed
+
+- **The published schemas name their copyright holder.** Each
+  `spec/**/*.schema.json` `$comment` said the licence and not whose
+  copyright it is; `scripts/specgen` now writes both.
+- **The copied ExtMcp proto carries its own copyright and licence.**
+  `integrations/agentgateway-extmcp/proto/ext_mcp.proto` has an SPDX
+  header naming the agentgateway authors and the upstream commit, and
+  the regenerated bindings carry it; the licence no longer lives only in
+  `REUSE.toml`.
+- **SECURITY.md no longer claims the whole project has no network, no
+  files and no dependencies.** That holds for the verifier packages;
+  `graph` reads and writes its store file, and the processor is a
+  network service with dependencies.
+- **A denial no longer repeats the attestation URL, or an unbounded
+  quote of the statement.** When a fetch failed, the reason sent to
+  every MCP client denied that target included the full URL, whose query
+  can be a credential in a presigned URL; it now names only the failure.
+  The reason for an unusable attestation is cut at 512 bytes, since it
+  can quote a statement up to `-max-bytes` long.
+- **The processor no longer follows a redirect off https.** An https
+  attestation URL whose server redirected to `http://` was fetched over
+  plain http, where the statement could be swapped in transit, although
+  an `http://` URL in the configuration is refused. A redirect is now
+  followed only to another https URL.
+- **The processor's README describes what a denial looks like.** It
+  said every denial reaches the MCP client as JSON-RPC error `-32001`;
+  current agentgateway answers a denied `tools/call` with an `isError`
+  tool result carrying the reason, and uses `-32001` for other methods.
+- **The API Compatibility check passes on main after a release.** It
+  compared HEAD with the tag on HEAD itself, and failed whenever gorelease
+  could not suggest a version because the module proxy did not yet list
+  that tag as newest, which turned main red after v0.0.4 (run
+  36686509680). It now compares against the last root release before
+  HEAD, and gorelease declining to suggest a version is not a failure;
+  an incompatible change or a gorelease that could not load the packages
+  still is. `scripts/test/api-check.bats` covers each case.
+- **The processor tag's release run waits for its image.** Both tags are
+  pushed together, so that run could start before the root tag's run had
+  published the processor image and failed at once, although the page
+  was published correctly. It now waits up to 20 minutes for the image.
+- **The manual's footer links to the author**: "© 2026 Sebastien
+  Rousseau" to <https://sebastienrousseau.com/>.
+
 ## [0.0.4] — 2026-09-30
 
 ### Added

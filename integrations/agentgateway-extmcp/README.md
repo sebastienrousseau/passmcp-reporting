@@ -32,14 +32,28 @@ For each backend named in `McpRequest.service_names`, in order:
 | Any verdict with `status: fail` whose phase is in `denyFailIn` | deny `failing checks in category X (ids)` |
 | Otherwise | `Pass`; scores ride along in the result's `metadata` under `passmcp.<target>` |
 
-Denials are `AuthorizationError` with code `PERMISSION_DENIED`, which the
-gateway turns into JSON-RPC error `-32001` carrying the reason.
+Denials are `AuthorizationError` with code `PERMISSION_DENIED` and the
+reason. What the MCP client receives depends on the method:
+
+- **`tools/call`**: a successful JSON-RPC response whose result is a
+  tool error, `isError: true`, with the reason as its text content. The
+  model reads why the call was refused, as it would any failed tool.
+- **Every other method**: JSON-RPC error `-32001` carrying the reason.
+
+That is agentgateway's mapping, not this processor's: `translate_error`
+in `crates/agentgateway/src/mcp/guardrails/client.rs` turns
+`PERMISSION_DENIED` into `-32001`, and `jsonrpc_error_body` in
+`crates/agentgateway/src/mcp/mod.rs` rewrites a rejected `tools/call`
+through `tool_error_body` (agentgateway commit `ff8685e`). A client that
+looks only for JSON-RPC errors will not see a denied tool call as one.
+
 `CheckResponse` always passes: the attestation is about the server, not
 about one response.
 
 A processor with no configuration loaded answers with gRPC `UNAVAILABLE`
 rather than a decision, so the gateway's `failureMode` decides what
-happens, not this code.
+happens, not this code. Under `failClosed` the gateway reports that as a
+JSON-RPC internal error, for `tools/call` too.
 
 ## Running it
 
@@ -47,7 +61,7 @@ Install a release, or run it from a checkout of this
 directory:
 
 ```sh
-go install satellion.com/passmcp-reporting/integrations/agentgateway-extmcp/cmd/agentgateway-extmcp@v0.0.4
+go install satellion.com/passmcp-reporting/integrations/agentgateway-extmcp/cmd/agentgateway-extmcp@v0.0.5
 agentgateway-extmcp -config example/config.json -listen 127.0.0.1:4400
 
 go run ./cmd/agentgateway-extmcp -config example/config.json -listen 127.0.0.1:4400
@@ -60,8 +74,8 @@ configuration from `/etc/extmcp/config.json`:
 
 ```sh
 docker run --rm -p 4400:4400 -v "$PWD/example:/etc/extmcp:ro" \
-  ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.4
-gh attestation verify oci://ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.4 --owner sebastienrousseau
+  ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.5
+gh attestation verify oci://ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.5 --owner sebastienrousseau
 
 docker build -t agentgateway-extmcp .   # or build it from this directory
 ```
@@ -75,14 +89,58 @@ agentgateway-extmcp -completion fish > ~/.config/fish/completions/agentgateway-e
 ```
 
 Flags: `-config` (required), `-listen` (default `127.0.0.1:4400`; use
-`0.0.0.0:…` in a container), `-reload-interval` (default off),
-`-max-bytes` (default 1 MiB per statement), `-fetch-timeout` (default
-10s), `-log-level`, and `-completion` (print a shell completion script). Diagnostics are JSON lines on stderr.
+`0.0.0.0:…` in a container), `-tls-cert` and `-tls-key` (serve over
+TLS; see below), `-reload-interval` (default off), `-max-bytes`
+(default 1 MiB per statement), `-fetch-timeout` (default 10s),
+`-log-level`, and `-completion` (print a shell completion script).
+Diagnostics are JSON lines on stderr.
 
 Statements are read once at startup. `SIGHUP` re-reads the configuration
 and every statement; `-reload-interval` does the same on a timer. A
 reload whose configuration does not parse is logged and the previous
 table stays in service.
+
+### TLS
+
+Without `-tls-cert` and `-tls-key` the gRPC listener is plaintext, which
+is right on loopback and nowhere else. Anywhere the gateway reaches the
+processor over a network, give it a certificate:
+
+```sh
+agentgateway-extmcp -config config.json -listen 0.0.0.0:4400 \
+  -tls-cert /etc/extmcp/tls.crt -tls-key /etc/extmcp/tls.key
+```
+
+- Both flags take PEM files: the certificate chain, leaf first, and its
+  private key. Naming one without the other is refused at startup, as is
+  a key that does not match the certificate, so a processor that is
+  listening is one that is serving TLS.
+- The listener accepts TLS 1.2 and 1.3, nothing older. The cipher suites
+  are the Go standard library's defaults.
+- The key pair is reloaded without a restart. `SIGHUP`, and each
+  `-reload-interval` tick, re-read both files along with the
+  configuration and the attestations; the next connection is served the
+  new certificate, and connections already open keep theirs. A pair that
+  does not load on reload (a key that does not match, a file caught
+  half-written) is logged and the certificate in service stays, so
+  rotating with cert-manager or an ACME client needs no restart and no
+  gap in the gate.
+- The processor does not authenticate its clients: there is no mutual
+  TLS. Restrict who can reach the port with the network, as for any
+  internal gRPC service.
+
+On the gateway side, the processor entry's `policies.backendTLS` makes
+agentgateway connect over TLS; `root` names the CA bundle to check the
+certificate against when it is not publicly trusted:
+
+```yaml
+        - kind: remote
+          host: extmcp.internal:4400
+          failureMode: failClosed
+          policies:
+            backendTLS:
+              root: /etc/agentgateway/extmcp-ca.pem
+```
 
 ### Configuration
 
@@ -109,7 +167,8 @@ table stays in service.
 - `targets` keys are agentgateway backend names, exactly as they appear
   in the gateway's `mcp.targets[].name`.
 - `attestation` is a file path or an `https://` URL. `http://` is
-  refused; a statement that could be swapped in transit is not evidence.
+  refused, and so is a redirect from `https://` to `http://`; a
+  statement that could be swapped in transit is not evidence.
 - `endpoint` and `transport` describe the server passmcp evaluated. They
   are checked through the statement's subject digest (`Covers`), not by
   string comparison, so a statement about one server cannot be pointed
@@ -166,9 +225,10 @@ gate.
   processor reads it, or serve it from a location only your pipeline can
   write. The `attestation` package is the payload half of that pipeline
   on purpose.
-- **TLS between the gateway and the processor.** The gRPC listener is
-  plaintext; put it on loopback or a private network, or terminate TLS
-  in front of it and configure `backendTLS` on the processor entry.
+- **Client authentication.** The listener serves TLS with `-tls-cert`
+  and `-tls-key` but does not ask the gateway for a certificate. Its
+  answers carry no secret, only a decision and a score; restrict who can
+  reach it with the network.
 - **Response inspection and request mutation.** Both are in the wire
   contract and neither is used.
 

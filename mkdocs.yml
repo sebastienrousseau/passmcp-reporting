@@ -4,6 +4,7 @@
 site_name: passmcp-reporting
 site_description: The attestation format, offline verifier and schema for passmcp's evidence.
 site_url: https://sebastienrousseau.com/passmcp-reporting/
+copyright: '&copy; 2026 <a href="https://sebastienrousseau.com/" rel="author">Sebastien Rousseau</a>'
 repo_url: https://github.com/sebastienrousseau/passmcp-reporting
 repo_name: sebastienrousseau/passmcp-reporting
 edit_uri: edit/main/docs/
@@ -52,6 +53,9 @@ nav:
   - The A2A evaluation: a2a.md
   - The security graph: graph.md
   - Benchmarks: BENCHMARKS.md
+  - Verifying a release: signing.md
+  - Security model: security-model.md
+  - Roadmap: https://github.com/sebastienrousseau/passmcp-reporting/blob/main/ROADMAP.md
   - Decision records:
       - Index: adr/README.md
       - 0001 The verifier in its own module: adr/0001-verifier-in-its-own-module.md
