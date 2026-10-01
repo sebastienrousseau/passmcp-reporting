@@ -5,8 +5,6 @@ package a2a
 
 import (
 	"bytes"
-	"crypto/sha512"
-	"encoding/hex"
 	"os"
 	"strings"
 	"testing"
@@ -138,43 +136,6 @@ func TestValidateRefusesEachBrokenRule(t *testing.T) {
 // TestTheFixtureIsCurrent keeps testdata/statement.json equal to what valid()
 // marshals, so a consumer testing against the fixture tests a statement this
 // package accepts. Regenerate with PASSMCP_UPDATE_FIXTURES=1.
-// TestSubjectDigestAlgorithms. The rules the MCP verifier applies to a
-// subject's DigestSet: every known algorithm present recomputes, and at
-// least one is present.
-func TestSubjectDigestAlgorithms(t *testing.T) {
-	target := valid().Predicate.Target
-	good256 := SubjectFor(target).Digest["sha256"]
-	sum := sha512.Sum512([]byte(descriptor(target)))
-	good512 := hex.EncodeToString(sum[:])
-	for name, tc := range map[string]struct {
-		digest map[string]string
-		want   string
-	}{
-		"sha256 and sha512, both correct": {map[string]string{"sha256": good256, "sha512": good512}, ""},
-		"sha512 only, correct":            {map[string]string{"sha512": good512}, ""},
-		"sha256 correct, sha512 wrong":    {map[string]string{"sha256": good256, "sha512": strings.Repeat("0", 128)}, "sha512 digest does not cover"},
-		"an unknown algorithm only":       {map[string]string{"md5": "d41d8cd98f00b204e9800998ecf8427e"}, "no sha256 or sha512 digest"},
-	} {
-		t.Run(name, func(t *testing.T) {
-			s := valid()
-			s.Subject[0].Digest = tc.digest
-			err := s.Validate()
-			switch {
-			case tc.want == "" && err != nil:
-				t.Fatalf("refused: %v", err)
-			case tc.want != "" && (err == nil || !strings.Contains(err.Error(), tc.want)):
-				t.Fatalf("err = %v, want it to mention %q", err, tc.want)
-			}
-			if covers := s.Covers(target.Endpoint); covers != (tc.want == "") {
-				t.Fatalf("Covers = %v, want %v", covers, tc.want == "")
-			}
-		})
-	}
-	if d := SubjectFor(target).Digest; len(d) != 1 || d["sha256"] == "" {
-		t.Fatalf("SubjectFor wrote %v, want sha256 alone", d)
-	}
-}
-
 func TestTheFixtureIsCurrent(t *testing.T) {
 	want, err := valid().Marshal()
 	if err != nil {

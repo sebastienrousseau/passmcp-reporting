@@ -30,10 +30,8 @@ check-jsonschema --schemafile spec/attestation/mcp-evaluation-v1.schema.json sta
 
 The schema cannot recompute the digest. A consumer validating by schema
 alone should compute `sha256(transport + "\n" + endpoint)` from the
-predicate's target and compare it with `subject[0].digest.sha256` itself,
-and do the same with `sha512` for a `subject[0].digest.sha512`; every one
-present must match, and at least one must be present. That is the check
-that catches a renamed subject.
+predicate's target and compare it with `subject[0].digest.sha256` itself;
+that is the check that catches a renamed subject.
 
 ## 2. Is it about the server in front of me?
 

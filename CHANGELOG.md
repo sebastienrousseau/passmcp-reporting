@@ -59,21 +59,6 @@ module, this repository tags first.
 
 ### Changed
 
-- **Breaking: `Validate` and `Covers` accept a sha512 subject digest
-  beside, or instead of, sha256**
-  ([#10](https://github.com/sebastienrousseau/passmcp-reporting/issues/10),
-  [ADR 0003](docs/adr/0003-subject-digest-sha256-or-sha512.md)). In both
-  `attestation` and `a2a`, every `sha256` and `sha512` entry the subject
-  carries is recomputed from the target descriptor and must match, and
-  at least one must be present. A statement valid only by its `sha512`
-  digest is now accepted; one whose `sha512` does not match is now
-  refused even when its `sha256` does, where it used to be accepted
-  unchecked; a subject with only an unknown algorithm is refused, as
-  before. `SubjectFor` still writes `sha256` alone and `graph.ServerID`
-  still reads it, so what passmcp produces does not change. The errors
-  now say "no sha256 or sha512 digest" and name the algorithm that does
-  not match.
-
 - **The complexity ceilings in `.golangci.yml` are the portfolio's**:
   `gocyclo` 10 (was 15), `gocognit` 15 (was 20), `funlen` 60 lines (was
   80). The three run in `make complexity` rather than `make lint`.

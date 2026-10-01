@@ -5,8 +5,6 @@ package a2a
 
 import (
 	"bytes"
-	"crypto/sha512"
-	"encoding/hex"
 	"os"
 	"path/filepath"
 	"testing"
@@ -24,13 +22,6 @@ func FuzzParse(f *testing.F) {
 	}
 	f.Add(fixture)
 	if b, err := valid().Marshal(); err == nil {
-		f.Add(b)
-	}
-	// A subject carrying only sha512, which Validate accepts.
-	only512 := valid()
-	sum := sha512.Sum512([]byte(descriptor(only512.Predicate.Target)))
-	only512.Subject[0].Digest = map[string]string{"sha512": hex.EncodeToString(sum[:])}
-	if b, err := only512.Marshal(); err == nil {
 		f.Add(b)
 	}
 	for _, s := range []string{
