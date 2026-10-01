@@ -65,7 +65,7 @@
 ### As a Go library
 
 ```sh
-go get satellion.com/passmcp-reporting@v0.0.4
+go get satellion.com/passmcp-reporting@v0.0.5
 ```
 
 The module has no dependencies: adding it adds one line to `go.sum`.
@@ -137,7 +137,7 @@ it, and checking the signature, is the envelope's job — see
 
 ## The passmcp-reporting ecosystem
 
-Every component is released at **0.0.4** and moves in lockstep: one version across the family, released together ([docs/ecosystem.md](https://github.com/sebastienrousseau/passmcp/blob/main/docs/ecosystem.md)).
+Every component is released at **0.0.5** and moves in lockstep: one version across the family, released together ([docs/ecosystem.md](https://github.com/sebastienrousseau/passmcp/blob/main/docs/ecosystem.md)).
 
 | Component | Purpose | Use case |
 | :--- | :--- | :--- |
