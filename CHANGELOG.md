@@ -31,6 +31,30 @@ module, this repository tags first.
   still reads it, so what passmcp produces does not change. The errors
   now say "no sha256 or sha512 digest" and name the algorithm that does
   not match.
+- **Breaking: the agentgateway processor serves TLS by default, and
+  refuses to start without a key pair.** Until 0.0.5 a processor
+  started without `-tls-cert` and `-tls-key` served plaintext, and the
+  container image did so on every interface. It now stops with an error
+  naming `-tls-cert`, `-tls-key` and `-plaintext`. Plaintext is an
+  explicit opt-in, `-plaintext`, accepted only on a loopback `-listen`
+  address (`127.0.0.0/8`, `::1` or `localhost`) and never beside a key
+  pair; a wildcard, a routable address or any other host name is
+  refused, since a name's resolution is not evidence the listener stays
+  on the host. The image's default arguments now name
+  `/etc/extmcp/tls.crt` and `/etc/extmcp/tls.key`. To migrate, do one
+  of:
+  - **Mount a key pair.** Run the binary with `-tls-cert` and
+    `-tls-key`, or put `tls.crt` and `tls.key` beside `config.json` in
+    the directory mounted at `/etc/extmcp`, readable by uid 65532. Set
+    `policies.backendTLS` on the gateway's processor entry, with `root`
+    naming the CA when the certificate is not publicly trusted; the
+    processor's README shows it.
+  - **Use `-plaintext` on loopback** for a processor on the same host as
+    the gateway, or a sidecar sharing its network namespace (a second
+    container in the same pod): `-listen 127.0.0.1:4400 -plaintext`. In
+    the image, pass `-config /etc/extmcp/config.json -listen
+    127.0.0.1:4400 -plaintext` as its arguments, which replace the
+    defaults.
 
 ## [0.0.5] — 2026-10-01
 

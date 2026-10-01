@@ -79,7 +79,7 @@ func TestRunServesUntilCancelled(t *testing.T) {
 	done := make(chan error, 1)
 	var stderr bytes.Buffer
 	go func() {
-		done <- run(ctx, []string{"-config", cfg, "-listen", "127.0.0.1:0", "-reload-interval", "10ms", "-log-level", "debug"}, &stderr, ready)
+		done <- run(ctx, []string{"-config", cfg, "-listen", "127.0.0.1:0", "-plaintext", "-reload-interval", "10ms", "-log-level", "debug"}, &stderr, ready)
 	}()
 	var addr net.Addr
 	select {
@@ -138,10 +138,10 @@ func TestRunRefusesBadInvocations(t *testing.T) {
 		want string
 	}{
 		"no config flag":   {nil, "-config is required"},
-		"missing config":   {[]string{"-config", dir + "/absent.json"}, "config:"},
-		"bad log level":    {[]string{"-config", good, "-log-level", "loud"}, "-log-level"},
+		"missing config":   {[]string{"-config", dir + "/absent.json", "-plaintext"}, "config:"},
+		"bad log level":    {[]string{"-config", good, "-plaintext", "-log-level", "loud"}, "-log-level"},
 		"unknown flag":     {[]string{"-bogus"}, "flag provided but not defined"},
-		"unusable address": {[]string{"-config", good, "-listen", "256.256.256.256:1"}, "listen"},
+		"unusable address": {[]string{"-config", good, "-plaintext", "-listen", "127.0.0.1:99999"}, "listen"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			var stderr bytes.Buffer

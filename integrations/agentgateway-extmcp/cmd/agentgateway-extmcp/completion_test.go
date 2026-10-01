@@ -22,7 +22,7 @@ func completionFor(t *testing.T, shell string) (string, error) {
 }
 
 func TestCompletionCoversEveryFlagInEveryShell(t *testing.T) {
-	flags := []string{"config", "listen", "reload-interval", "max-bytes", "fetch-timeout", "log-level", "tls-cert", "tls-key", "completion"}
+	flags := []string{"config", "listen", "reload-interval", "max-bytes", "fetch-timeout", "log-level", "tls-cert", "tls-key", "plaintext", "completion"}
 	for _, shell := range completionShells {
 		script, err := completionFor(t, shell)
 		if err != nil {

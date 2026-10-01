@@ -30,7 +30,9 @@ func TestSIGHUPReloads(t *testing.T) {
 	ready := make(chan net.Addr, 1)
 	done := make(chan error, 1)
 	var stderr lockedBuffer
-	go func() { done <- run(ctx, []string{"-config", cfg, "-listen", "127.0.0.1:0"}, &stderr, ready) }()
+	go func() {
+		done <- run(ctx, []string{"-config", cfg, "-listen", "127.0.0.1:0", "-plaintext"}, &stderr, ready)
+	}()
 	var addr net.Addr
 	select {
 	case addr = <-ready:
