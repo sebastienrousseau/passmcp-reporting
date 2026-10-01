@@ -91,6 +91,7 @@ statement or from a request.
 | A statement fetched in the clear and swapped in transit | network attacker | P2 | C4 |
 | The processor made to fetch an address of the attacker's choosing | a statement author, an MCP client | P2 | C4 |
 | The gateway's traffic to the processor read or altered | network attacker | P3 | C5 |
+| The processor started without TLS where a network can reach it, by a missing flag or a wildcard address | operator mistake, not attacker | P3 | C5 |
 | A credential, or unbounded attacker text, delivered to MCP clients in a denial | whoever controls a statement or its origin | P4 | C6 |
 | A processor that has not loaded its configuration answering "pass" | fault, not attacker | P3 | C3 |
 | A tampered release: tag, module or image | registry or account compromise | R1, R2 | C7 |
@@ -109,7 +110,8 @@ in the Go runtime.
 ### C1. A statement `Validate` accepts is intact and about the server it names
 
 `Validate` recomputes the subject digest from the predicate's target
-descriptor and compares it with the subject's, so an edited endpoint,
+descriptor and compares it with the subject's, in every known algorithm
+(`sha256`, `sha512`) the subject carries, so an edited endpoint,
 transport or subject fails; the subject's name must be the target's
 endpoint, because that is what in-toto tooling displays; there must be
 exactly one subject; the statement and predicate types must be this
@@ -178,26 +180,42 @@ by the standard library; nothing sets `InsecureSkipVerify`.
   including an internal one. The origin is the operator's choice, and a
   statement fetched from anywhere is still verified before it counts.
 
-### C5. The gateway's traffic to the processor can be encrypted
+### C5. The gateway's traffic to the processor is encrypted, except on loopback
 
-With `-tls-cert` and `-tls-key` the listener serves TLS 1.2 or 1.3
-only; naming one without the other, or a key that does not match, stops
-the process before it listens. Without them it is plaintext and, by
-default, bound to `127.0.0.1`. A reload re-reads the key pair; one that
-does not load is logged and the certificate in service stays, so a
-rotation caught half-written never leaves the listener without one.
+The listener serves TLS 1.2 or 1.3 from `-tls-cert` and `-tls-key`,
+and the process refuses to start without them; naming one without the
+other, a file that is not there, or a key that does not match stops it
+before it listens. Plaintext is an explicit opt-in, `-plaintext`, and
+is refused beside a key pair and on any `-listen` address that is not a
+literal loopback IP (`127.0.0.0/8`, `::1`) or `localhost`: a wildcard,
+a routable address and every other host name fail closed, since what a
+name resolves to is not the processor's to know. Where `localhost`
+landed is checked again once bound. The container image's default
+arguments name a key pair, so it serves TLS or does not start. A reload
+re-reads the key pair; one that does not load is logged and the
+certificate in service stays, so a rotation caught half-written never
+leaves the listener without one.
 
-- Code: `cmd/agentgateway-extmcp/tls.go`.
-- Evidence: `TestRunServesOverTLS`, `TestTLSConfigFloorIsTLS12`,
+- Code: `cmd/agentgateway-extmcp/tls.go` (`transport`, `loopbackOnly`,
+  `listen`, `tlsConfig`), `Dockerfile`.
+- Evidence: `TestRunRefusesToStartWithoutAKeyPair`,
+  `TestPlaintextServesOnLoopback`,
+  `TestPlaintextRefusesANonLoopbackAddress`,
+  `TestPlaintextWithAKeyPairIsRefused`,
+  `TestPlaintextChecksTheBoundAddress`,
+  `TestAMissingKeyPairNamesTheOptOut`, `TestRunServesOverTLS`,
+  `TestTLSConfigFloorIsTLS12`,
   `TestTLSListenerRefusesOldVersionsAndPlaintext`,
   `TestServerTLSRefusesAnIncompletePair`,
   `TestRunRefusesAHalfTLSConfigurationBeforeListening`,
-  `TestTLSKeyPairReloads`, `TestSIGHUPReloadsTheKeyPair`.
+  `TestTLSKeyPairReloads`, `TestSIGHUPReloadsTheKeyPair`; the CI
+  integration job starts the image without a key pair and expects a
+  refusal, then with one and expects a TLS listener.
 - Residual: the processor does not authenticate its clients (no mutual
-  TLS). Its answers carry a decision and a score, no secret. The
-  container image listens on `0.0.0.0` in plaintext unless given a key
-  pair, because a container's loopback is unreachable from the gateway;
-  its README says to add TLS or restrict the network.
+  TLS). Its answers carry a decision and a score, no secret. Under
+  `-plaintext` anything on the same host, or in the same network
+  namespace, can read or alter the traffic; that is the trust a loopback
+  listener already extends to the host.
 
 ### C6. A denial carries no credential and is bounded
 
@@ -245,7 +263,7 @@ workflows on every pull request.
 | Principle | Where |
 |---|---|
 | Economy of mechanism | The verifier is standard library only and under a thousand lines per package; a reviewer can read all of it ([ADR 0001](adr/0001-verifier-in-its-own-module.md)). |
-| Fail-safe defaults | `requireAttestation` defaults to true; an unloaded store is an error, not a pass; an unknown predicate type, transport, status or configuration field is refused; half a TLS key pair is refused rather than read as plaintext. |
+| Fail-safe defaults | `requireAttestation` defaults to true; an unloaded store is an error, not a pass; an unknown predicate type, transport, status or configuration field is refused; the processor refuses to start without a TLS key pair, and serves plaintext only when asked and only on loopback. |
 | Complete mediation | `CheckRequest` decides every backend a request names, from the current snapshot, every time; the first refusal denies the call. |
 | Open design | The format, its schema and this document are public; nothing depends on an attacker not knowing how it works. |
 | Least privilege | The processor image runs as a non-root user on a distroless base; each CI job holds only the permissions it names; the processor reads its sources at load time, not per request. |
@@ -262,8 +280,8 @@ workflows on every pull request.
 | CWE-345 | Insufficient verification of data authenticity | Subject digest recomputed from the target; name checked; signature left to the envelope and documented as required | `TestCoversRecomputesRatherThanCompares`, `TestCheckRequest` ("tampered") |
 | CWE-400, CWE-770 | Uncontrolled resource consumption | Statement size cap, fetch timeout, bounded denial reasons, loading off the request path | `TestLoaderReadsFilesAndHTTPS`, `TestLoaderDefaultsAreApplied`, `TestAnUnusableReasonIsBounded` |
 | CWE-918 | Server-side request forgery | Only the operator's configured source is fetched; redirects must stay on https | `TestLoaderRefusesARedirectOffHTTPS`, `TestLoaderReadsFilesAndHTTPS` |
-| CWE-319 | Cleartext transmission | `http://` sources and redirects to them refused; TLS for the gRPC listener | `TestLoaderReadsFilesAndHTTPS`, `TestRunServesOverTLS`, `TestTLSListenerRefusesOldVersionsAndPlaintext` |
-| CWE-326, CWE-327 | Weak TLS or hashing | TLS 1.2 floor; SHA-256 subject digests | `TestTLSConfigFloorIsTLS12`, `TestSubjectForIsStableAndDistinct` |
+| CWE-319 | Cleartext transmission | `http://` sources and redirects to them refused; TLS required for the gRPC listener, plaintext only by opt-in on loopback | `TestLoaderReadsFilesAndHTTPS`, `TestRunServesOverTLS`, `TestTLSListenerRefusesOldVersionsAndPlaintext`, `TestRunRefusesToStartWithoutAKeyPair`, `TestPlaintextRefusesANonLoopbackAddress` |
+| CWE-326, CWE-327 | Weak TLS or hashing | TLS 1.2 floor; SHA-256 or SHA-512 subject digests, every one present recomputed | `TestTLSConfigFloorIsTLS12`, `TestSubjectForIsStableAndDistinct`, `TestSubjectDigestAlgorithms` |
 | CWE-295 | Improper certificate validation | Standard library verification; no `InsecureSkipVerify` anywhere in the tree | `TestLoaderReadsFilesAndHTTPS` (only the test server's own CA is trusted) |
 | CWE-209, CWE-532 | Sensitive data in errors or logs | Fetch errors drop the URL; the graph model cannot hold a secret | `TestAFailedFetchDoesNotRepeatTheURL`, `TestTheModelHasNoFieldForASecret` |
 | CWE-362 | Race condition | Requests read one immutable snapshot, swapped under a lock; the race detector runs in CI | `make test-race`; the processor's CI job runs `-race` |
@@ -302,13 +320,13 @@ Fixes are named by their commit subject on the `feat/v0.0.5` branch.
 | SR-1 | Medium | The processor followed a redirect from an https attestation URL to `http://`, fetching the statement in the clear although `http://` sources are refused | Fixed: redirects must stay on https (`fix: refuse attestation redirects off https`) |
 | SR-2 | Medium | A failed fetch put the full attestation URL into the denial reason sent to MCP clients; a presigned URL's query is a credential | Fixed (`fix: keep URLs and long quotes out of denials`) |
 | SR-3 | Low | The denial reason could quote up to `-max-bytes` of statement text in every denial and log line | Fixed: cut at 512 bytes, same commit |
-| SR-4 | Medium | The processor's gRPC listener had no TLS | Fixed: `-tls-cert` and `-tls-key`, TLS 1.2 floor (`feat: serve the processor's gRPC over TLS`) |
+| SR-4 | Medium | The processor's gRPC listener had no TLS | Fixed: `-tls-cert` and `-tls-key`, TLS 1.2 floor (`feat: serve the processor's gRPC over TLS`); from 0.0.6 TLS is the default and plaintext needs `-plaintext` on loopback, see SR-8 |
 | SR-5 | Low | SECURITY.md said "no network, no files, no dependencies" of the project; that is true of the verifier packages only, not of `graph`'s store or the processor | Fixed in SECURITY.md with this document |
 | SR-6 | Low | `a2a.Parse` had no fuzz target, unlike the other two parsers | Fixed (`test: fuzz the A2A statement parser`) |
 | SR-7 | Low | Dependabot watched only the root module, which has no dependencies, and not the processor's module or its image bases | Fixed (`ci: watch the processor's module and image bases`) |
-| SR-8 | Info | The container image listens in plaintext on all interfaces unless given a key pair | Accepted: a container's loopback is unreachable from the gateway; documented in the processor's README |
+| SR-8 | Info | The container image listens in plaintext on all interfaces unless given a key pair | Accepted at the review; fixed on 2026-10-01 on `feat/v0.0.6` (`feat!: require TLS unless plaintext on loopback`): the processor refuses to start without a key pair, `-plaintext` is refused off loopback, and the image's default arguments name a key pair |
 | SR-9 | Info | `attestation.Parse`, `a2a.Parse` and `graph.Parse` do not cap input size | Accepted by design (C2): the caller holds the bytes and sets the limit; the processor does |
-| SR-10 | Medium | The maintainer's GitHub account lists eight SSH signing keys, one titled `draft-tap-bot`; a tag signed by any of them verifies against the published list | Open, maintainer action: review the account's signing keys. [Verifying a release](signing.md) names the one key that has signed every release and shows how to accept only it |
+| SR-10 | Medium | The maintainer's GitHub account listed eight SSH signing keys, one titled `draft-tap-bot`; a tag signed by any of them verifies against the published list | Reduced on 2026-10-01: the four keys unused since June 2026 were removed, and the four that remain are in use. A tag signed by any of them still verifies against the published list, so [Verifying a release](signing.md) names the one key that has signed every release and shows how to accept only it |
 | SR-11 | Low | CI ran `gorelease@latest` and `govulncheck@latest`, unpinned | Fixed: both are pinned in `tools/go.mod` with `tool` directives and checksummed in `tools/go.sum`; Dependabot proposes the bumps (`ci: pin the tools CI runs`) |
 | SR-12 | Info | The processor does not authenticate the gateway (no mutual TLS) | Accepted: its answers hold no secret; restrict the port with the network |
 

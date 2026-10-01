@@ -259,18 +259,38 @@ jobs:
         env:
           GOTOOLCHAIN: auto
         run: make completions
-      - name: Container image builds, and the processor listens in it
+      - name: Container image builds, refuses plaintext, and listens over TLS
         run: |
           set -euo pipefail
           docker build --quiet --tag agentgateway-extmcp:ci .
-          docker run --detach --name extmcp --volume "$PWD/example:/etc/extmcp:ro" agentgateway-extmcp:ci >/dev/null
+          # Without a key pair the processor must refuse to start.
+          if out=$(docker run --rm --volume "$PWD/example:/etc/extmcp:ro" agentgateway-extmcp:ci 2>&1); then
+            echo "the processor started in its container without a key pair:" >&2
+            echo "${out}" >&2
+            exit 1
+          fi
+          if ! grep -q -- '-plaintext' <<<"${out}"; then
+            echo "the processor stopped for another reason than the missing key pair:" >&2
+            echo "${out}" >&2
+            exit 1
+          fi
+          # With a throwaway key pair it listens over TLS. The image runs
+          # as uid 65532, so the mounted files are world-readable.
+          tls=$(mktemp -d)
+          cp example/config.json "${tls}/"
+          openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 1 \
+            -subj /CN=extmcp -addext subjectAltName=DNS:localhost,IP:127.0.0.1 \
+            -keyout "${tls}/tls.key" -out "${tls}/tls.crt" 2>/dev/null
+          chmod 0755 "${tls}"
+          chmod 0644 "${tls}/tls.key" "${tls}/tls.crt"
+          docker run --detach --name extmcp --volume "${tls}:/etc/extmcp:ro" agentgateway-extmcp:ci >/dev/null
           trap 'docker rm --force extmcp >/dev/null' EXIT
           for _ in $(seq 20); do
             logs=$(docker logs extmcp 2>&1)
-            if grep -q '"msg":"listening"' <<<"${logs}"; then echo "listening"; exit 0; fi
+            if grep '"msg":"listening"' <<<"${logs}" | grep -q '"tls":true'; then echo "listening over TLS"; exit 0; fi
             sleep 1
           done
-          echo "the processor did not start listening in its container:" >&2
+          echo "the processor did not start listening over TLS in its container:" >&2
           echo "${logs}" >&2
           exit 1
       - name: golangci-lint

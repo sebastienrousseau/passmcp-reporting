@@ -13,6 +13,49 @@ a passmcp release, whatever changed in this tree, and a release here with
 nothing in it is the version rule working. Because passmcp imports this
 module, this repository tags first.
 
+## [Unreleased]
+
+### Changed
+
+- **Breaking: `Validate` and `Covers` accept a sha512 subject digest
+  beside, or instead of, sha256**
+  ([#10](https://github.com/sebastienrousseau/passmcp-reporting/issues/10),
+  [ADR 0003](docs/adr/0003-subject-digest-sha256-or-sha512.md)). In both
+  `attestation` and `a2a`, every `sha256` and `sha512` entry the subject
+  carries is recomputed from the target descriptor and must match, and
+  at least one must be present. A statement valid only by its `sha512`
+  digest is now accepted; one whose `sha512` does not match is now
+  refused even when its `sha256` does, where it used to be accepted
+  unchecked; a subject with only an unknown algorithm is refused, as
+  before. `SubjectFor` still writes `sha256` alone and `graph.ServerID`
+  still reads it, so what passmcp produces does not change. The errors
+  now say "no sha256 or sha512 digest" and name the algorithm that does
+  not match.
+- **Breaking: the agentgateway processor serves TLS by default, and
+  refuses to start without a key pair.** Until 0.0.5 a processor
+  started without `-tls-cert` and `-tls-key` served plaintext, and the
+  container image did so on every interface. It now stops with an error
+  naming `-tls-cert`, `-tls-key` and `-plaintext`. Plaintext is an
+  explicit opt-in, `-plaintext`, accepted only on a loopback `-listen`
+  address (`127.0.0.0/8`, `::1` or `localhost`) and never beside a key
+  pair; a wildcard, a routable address or any other host name is
+  refused, since a name's resolution is not evidence the listener stays
+  on the host. The image's default arguments now name
+  `/etc/extmcp/tls.crt` and `/etc/extmcp/tls.key`. To migrate, do one
+  of:
+  - **Mount a key pair.** Run the binary with `-tls-cert` and
+    `-tls-key`, or put `tls.crt` and `tls.key` beside `config.json` in
+    the directory mounted at `/etc/extmcp`, readable by uid 65532. Set
+    `policies.backendTLS` on the gateway's processor entry, with `root`
+    naming the CA when the certificate is not publicly trusted; the
+    processor's README shows it.
+  - **Use `-plaintext` on loopback** for a processor on the same host as
+    the gateway, or a sidecar sharing its network namespace (a second
+    container in the same pod): `-listen 127.0.0.1:4400 -plaintext`. In
+    the image, pass `-config /etc/extmcp/config.json -listen
+    127.0.0.1:4400 -plaintext` as its arguments, which replace the
+    defaults.
+
 ## [0.0.5] — 2026-10-01
 
 ### Added

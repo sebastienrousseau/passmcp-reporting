@@ -162,8 +162,11 @@ func TestServerTLSRefusesAnIncompletePair(t *testing.T) {
 			}
 		})
 	}
-	if opts, kp, err := serverTLS("", ""); err != nil || opts != nil || kp != nil {
-		t.Errorf("no TLS flags: opts = %v, pair = %v, err = %v; want plaintext with no options", opts, kp, err)
+	// Neither file is not a request for plaintext: that takes -plaintext.
+	if opts, kp, err := serverTLS("", ""); err == nil || opts != nil || kp != nil {
+		t.Errorf("no TLS flags: opts = %v, pair = %v, err = %v; want a refusal naming -plaintext", opts, kp, err)
+	} else if !strings.Contains(err.Error(), "-plaintext") {
+		t.Errorf("err = %v, want it to name -plaintext", err)
 	}
 }
 

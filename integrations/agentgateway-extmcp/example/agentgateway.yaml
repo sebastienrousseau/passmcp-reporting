@@ -6,7 +6,11 @@
 # are what the gateway sends in McpRequest.service_names, so they must
 # match the keys of config.json's "targets".
 #
-#   agentgateway-extmcp -config example/config.json -listen 127.0.0.1:4400
+# The processor runs on the same host, so it may serve without TLS on
+# loopback; anywhere else it needs a key pair (see the README's TLS
+# section, and backendTLS below):
+#
+#   agentgateway-extmcp -config example/config.json -listen 127.0.0.1:4400 -plaintext
 #   agentgateway -f example/agentgateway.yaml
 
 # yaml-language-server: $schema=https://agentgateway.dev/schema/config
@@ -25,6 +29,13 @@ mcp:
       processors:
         - kind: remote
           host: 127.0.0.1:4400
+          # For a processor started with -tls-cert and -tls-key, connect
+          # over TLS; root is the CA the processor's certificate chains
+          # to, and hostname the name to verify when host is not on it.
+          # policies:
+          #   backendTLS:
+          #     root: /etc/agentgateway/extmcp-ca.pem
+          #     hostname: extmcp.internal
           # A processor that is down or answers badly denies the call.
           # failOpen would let unattested backends through while the
           # processor restarts, which defeats the point of gating.

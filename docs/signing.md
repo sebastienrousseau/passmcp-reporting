@@ -143,6 +143,12 @@ docker run --rm -p 4400:4400 -v "$PWD/example:/etc/extmcp:ro" \
   ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp@sha256:eba48111e6e21e07631ced5e5883dd8af2dbb76740b5566c78229a96af2c83fa
 ```
 
+That is the v0.0.4 image, which serves plaintext. From 0.0.6 the image
+serves TLS only and refuses to start without a key pair: the mounted
+directory holds `config.json`, `tls.crt` and `tls.key`, as the
+[processor's README](https://github.com/sebastienrousseau/passmcp-reporting/blob/main/integrations/agentgateway-extmcp/README.md#tls)
+describes.
+
 ## What else is and is not signed
 
 - **Nothing else is the release check.** Commits are signed too, the
