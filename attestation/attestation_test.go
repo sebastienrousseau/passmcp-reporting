@@ -4,6 +4,8 @@
 package attestation
 
 import (
+	"crypto/sha512"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -49,26 +51,26 @@ func TestAWellFormedStatementValidates(t *testing.T) {
 // format guarantees; the error must say which.
 func TestValidateNamesEveryProblem(t *testing.T) {
 	for want, mutate := range map[string]func(s *Statement){
-		"_type is":                  func(s *Statement) { s.Type = "x" },
-		"predicateType is":          func(s *Statement) { s.PredicateType = "x" },
-		"no subject":                func(s *Statement) { s.Subject = nil },
-		"2 subjects":                func(s *Statement) { s.Subject = append(s.Subject, s.Subject[0]) },
-		"subject has no name":       func(s *Statement) { s.Subject[0].Name = " " },
-		"named":                     func(s *Statement) { s.Subject[0].Name = "https://trusted.example.com/mcp" },
-		"no sha256 digest":          func(s *Statement) { s.Subject[0].Digest = map[string]string{} },
-		"does not cover the target": func(s *Statement) { s.Subject[0].Digest["sha256"] = strings.Repeat("0", 64) },
-		"subjectKind is":            func(s *Statement) { s.Predicate.SubjectKind = "artifact" },
-		"no endpoint":               func(s *Statement) { s.Predicate.Target.Endpoint = "" },
-		"no transport":              func(s *Statement) { s.Predicate.Target.Transport = "" },
-		"unknown transport":         func(s *Statement) { s.Predicate.Target.Transport = "carrier-pigeon" },
-		"not identified":            func(s *Statement) { s.Predicate.Instrument.Version = "" },
-		"no run time":               func(s *Statement) { s.Predicate.RanAt = time.Time{} },
-		"no verdicts":               func(s *Statement) { s.Predicate.Verdicts = nil; s.Predicate.Counts = Counts{} },
-		"checkInventory is empty":   func(s *Statement) { s.Predicate.JudgedAgainst.CheckInventory = "" },
-		"no rubric version":         func(s *Statement) { s.Predicate.JudgedAgainst.Rubric = "" },
-		"has no id":                 func(s *Statement) { s.Predicate.Verdicts[0].ID = "" },
-		"has status":                func(s *Statement) { s.Predicate.Verdicts[0].Status = "probably" },
-		"counts disagree":           func(s *Statement) { s.Predicate.Counts.Pass = 7 },
+		"_type is":                   func(s *Statement) { s.Type = "x" },
+		"predicateType is":           func(s *Statement) { s.PredicateType = "x" },
+		"no subject":                 func(s *Statement) { s.Subject = nil },
+		"2 subjects":                 func(s *Statement) { s.Subject = append(s.Subject, s.Subject[0]) },
+		"subject has no name":        func(s *Statement) { s.Subject[0].Name = " " },
+		"named":                      func(s *Statement) { s.Subject[0].Name = "https://trusted.example.com/mcp" },
+		"no sha256 or sha512 digest": func(s *Statement) { s.Subject[0].Digest = map[string]string{} },
+		"does not cover the target":  func(s *Statement) { s.Subject[0].Digest["sha256"] = strings.Repeat("0", 64) },
+		"subjectKind is":             func(s *Statement) { s.Predicate.SubjectKind = "artifact" },
+		"no endpoint":                func(s *Statement) { s.Predicate.Target.Endpoint = "" },
+		"no transport":               func(s *Statement) { s.Predicate.Target.Transport = "" },
+		"unknown transport":          func(s *Statement) { s.Predicate.Target.Transport = "carrier-pigeon" },
+		"not identified":             func(s *Statement) { s.Predicate.Instrument.Version = "" },
+		"no run time":                func(s *Statement) { s.Predicate.RanAt = time.Time{} },
+		"no verdicts":                func(s *Statement) { s.Predicate.Verdicts = nil; s.Predicate.Counts = Counts{} },
+		"checkInventory is empty":    func(s *Statement) { s.Predicate.JudgedAgainst.CheckInventory = "" },
+		"no rubric version":          func(s *Statement) { s.Predicate.JudgedAgainst.Rubric = "" },
+		"has no id":                  func(s *Statement) { s.Predicate.Verdicts[0].ID = "" },
+		"has status":                 func(s *Statement) { s.Predicate.Verdicts[0].Status = "probably" },
+		"counts disagree":            func(s *Statement) { s.Predicate.Counts.Pass = 7 },
 	} {
 		t.Run(want, func(t *testing.T) {
 			s := valid()
@@ -162,6 +164,60 @@ func TestCoversRecomputesRatherThanCompares(t *testing.T) {
 	s.Subject = nil
 	if s.Covers("http", "https://mcp.example.com/mcp") {
 		t.Error("a statement with no subject covers something")
+	}
+}
+
+// sha512Of is the SHA-512 of the descriptor of t, in hex: the digest a
+// producer whose policy requires SHA-512 writes beside, or instead of,
+// the SHA-256 SubjectFor writes.
+func sha512Of(t Target) string {
+	sum := sha512.Sum512([]byte(descriptor(t)))
+	return hex.EncodeToString(sum[:])
+}
+
+// TestSubjectDigestAlgorithms. in-toto's DigestSet is a map so a subject
+// can carry more than one algorithm. Every known algorithm present must
+// recompute, at least one must be present, and an unknown one alone is no
+// digest at all.
+func TestSubjectDigestAlgorithms(t *testing.T) {
+	target := valid().Predicate.Target
+	good256 := SubjectFor(target).Digest["sha256"]
+	good512 := sha512Of(target)
+	for name, tc := range map[string]struct {
+		digest map[string]string
+		want   string // "" for accepted, else a fragment of the error
+	}{
+		"sha256 and sha512, both correct": {map[string]string{"sha256": good256, "sha512": good512}, ""},
+		"sha512 only, correct":            {map[string]string{"sha512": good512}, ""},
+		"sha256 correct, sha512 wrong":    {map[string]string{"sha256": good256, "sha512": strings.Repeat("0", 128)}, "sha512 digest does not cover"},
+		"sha512 correct, sha256 wrong":    {map[string]string{"sha256": strings.Repeat("0", 64), "sha512": good512}, "sha256 digest does not cover"},
+		"sha512 empty beside sha256":      {map[string]string{"sha256": good256, "sha512": ""}, "sha512 digest does not cover"},
+		"an unknown algorithm only":       {map[string]string{"md5": "d41d8cd98f00b204e9800998ecf8427e"}, "no sha256 or sha512 digest"},
+		"an unknown one beside sha256":    {map[string]string{"md5": "x", "sha256": good256}, ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			s := valid()
+			s.Subject[0].Digest = tc.digest
+			err := s.Validate()
+			switch {
+			case tc.want == "" && err != nil:
+				t.Fatalf("refused: %v", err)
+			case tc.want != "" && (err == nil || !strings.Contains(err.Error(), tc.want)):
+				t.Fatalf("err = %v, want it to mention %q", err, tc.want)
+			}
+			if covers := s.Covers(target.Transport, target.Endpoint); covers != (tc.want == "") {
+				t.Fatalf("Covers = %v, want %v", covers, tc.want == "")
+			}
+		})
+	}
+}
+
+// TestSubjectForWritesSHA256Only. What passmcp produces does not change
+// because the verifier learned another algorithm.
+func TestSubjectForWritesSHA256Only(t *testing.T) {
+	d := SubjectFor(valid().Predicate.Target).Digest
+	if len(d) != 1 || d["sha256"] == "" {
+		t.Fatalf("SubjectFor wrote %v, want sha256 alone", d)
 	}
 }
 

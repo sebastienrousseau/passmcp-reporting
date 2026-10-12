@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"satellion.com/passmcp-reporting/internal/subjectdigest"
 )
 
 // Parse reads a statement and validates its structure.
@@ -105,16 +107,17 @@ func (s *Statement) validateSubject(note func(format string, a ...any)) {
 			// worse than one that fails it.
 			note("the subject is named %q but the predicate is about %q", sub.Name, want)
 		}
-		got := sub.Digest["sha256"]
-		switch {
-		case got == "":
-			note("the subject has no sha256 digest")
-		case got != digest(descriptor(s.Predicate.Target)):
-			// The digest is what ties the statement to a target. One that
-			// does not recompute means the predicate was edited after the
-			// digest was taken, which is precisely what an attestation is
-			// for detecting.
-			note("the subject digest does not cover the target it names: a statement whose predicate was edited after the fact")
+		// The digest is what ties the statement to a target. One that
+		// does not recompute means the predicate was edited after the
+		// digest was taken, which is precisely what an attestation is for
+		// detecting. Every known algorithm the subject carries must
+		// recompute: a correct sha256 beside a wrong sha512 is refused,
+		// or a consumer whose policy reads only sha512 would be misled.
+		switch found, mismatch := subjectdigest.Check(sub.Digest, descriptor(s.Predicate.Target)); {
+		case !found:
+			note("the subject has no %s digest", subjectdigest.Names)
+		case mismatch != "":
+			note("the subject %s digest does not cover the target it names: a statement whose predicate was edited after the fact", mismatch)
 		}
 	case 0:
 		note("no subject: the statement is about nothing")
@@ -173,7 +176,9 @@ func (s *Statement) VerdictFor(id string) (Verdict, error) {
 }
 
 // Covers reports whether the statement is about the given target, by
-// recomputing the descriptor digest rather than comparing strings.
+// recomputing the descriptor digest rather than comparing strings. It holds
+// when the subject carries a sha256 or sha512 digest and every one of those
+// it carries matches.
 //
 // A gateway holding a statement and an address needs to know they match. A
 // string comparison would answer "no" for a URL that differs only in its
@@ -182,6 +187,5 @@ func (s *Statement) Covers(transport, endpoint string) bool {
 	if len(s.Subject) != 1 {
 		return false
 	}
-	want := digest(descriptor(Target{Transport: transport, Endpoint: endpoint}))
-	return s.Subject[0].Digest["sha256"] == want
+	return subjectdigest.Covers(s.Subject[0].Digest, descriptor(Target{Transport: transport, Endpoint: endpoint}))
 }

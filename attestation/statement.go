@@ -77,7 +77,11 @@ type Statement struct {
 
 // Subject is what the statement is about.
 type Subject struct {
-	Name   string            `json:"name"`
+	Name string `json:"name"`
+	// Digest is an in-toto DigestSet over the target descriptor, keyed by
+	// algorithm. Validate recomputes every sha256 and sha512 entry and
+	// needs at least one of them; SubjectFor writes sha256 alone. Other
+	// algorithms are carried and ignored.
 	Digest map[string]string `json:"digest"`
 }
 

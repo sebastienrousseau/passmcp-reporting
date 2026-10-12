@@ -4,15 +4,16 @@
 // Command agentgateway-extmcp serves agentgateway's ExtMcp policy hook and
 // gates MCP backends on passmcp attestations.
 //
-//	agentgateway-extmcp -config config.json -listen 127.0.0.1:4400
 //	agentgateway-extmcp -config config.json -tls-cert tls.crt -tls-key tls.key
+//	agentgateway-extmcp -config config.json -listen 127.0.0.1:4400 -plaintext
 //
 // The configuration and every attestation it names are loaded before the
 // listener opens, so a processor that is up is one that has decided what
 // it will say. SIGHUP reloads both, and the TLS key pair when there is one;
-// -reload-interval does so on a timer. With -tls-cert and -tls-key the
-// listener speaks TLS 1.2 or later; without them it is plaintext, for
-// loopback or a private network.
+// -reload-interval does so on a timer. The listener speaks TLS 1.2 or
+// later, from -tls-cert and -tls-key, and the process refuses to start
+// without them. -plaintext serves without TLS instead, and only on a
+// loopback -listen address, for a gateway on the same host.
 // Diagnostics go to stderr as JSON lines.
 package main
 
@@ -53,6 +54,7 @@ type options struct {
 	config, listen, level, completion, tlsCert, tlsKey string
 	interval, timeout                                  time.Duration
 	maxBytes                                           int64
+	plaintext                                          bool
 }
 
 // flagSet declares the command's flags over o. The completion scripts are
@@ -68,12 +70,13 @@ func flagSet(stderr io.Writer, o *options) *flag.FlagSet {
 	fs.StringVar(&o.level, "log-level", "info", "debug, info, warn or error")
 	fs.StringVar(&o.tlsCert, "tls-cert", "", "PEM certificate chain to serve gRPC over TLS with; needs -tls-key")
 	fs.StringVar(&o.tlsKey, "tls-key", "", "PEM private key for -tls-cert")
+	fs.BoolVar(&o.plaintext, "plaintext", false, "serve gRPC without TLS; only on a loopback -listen address, and not with -tls-cert or -tls-key")
 	fs.StringVar(&o.completion, "completion", "", "print a completion script for bash, zsh or fish, and exit")
 	return fs
 }
 
 // prepared is what prepare builds: the logger, the listener's transport
-// credentials, and the key pair behind them, nil for plaintext.
+// credentials, and the key pair behind them, nil under -plaintext.
 type prepared struct {
 	log   *slog.Logger
 	creds []grpc.ServerOption
@@ -90,7 +93,7 @@ func (o *options) prepare(stderr io.Writer) (*prepared, error) {
 	if err := lvl.UnmarshalText([]byte(o.level)); err != nil {
 		return nil, fmt.Errorf("-log-level: %w", err)
 	}
-	creds, certs, err := serverTLS(o.tlsCert, o.tlsKey)
+	creds, certs, err := transport(o.listen, o.tlsCert, o.tlsKey, o.plaintext)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +130,7 @@ func run(ctx context.Context, args []string, stderr io.Writer, ready chan<- net.
 		return err
 	}
 
-	lis, err := net.Listen("tcp", o.listen)
+	lis, err := listen(o.listen, o.plaintext)
 	if err != nil {
 		return err
 	}

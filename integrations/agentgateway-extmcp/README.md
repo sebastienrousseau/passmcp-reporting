@@ -62,18 +62,26 @@ directory:
 
 ```sh
 go install satellion.com/passmcp-reporting/integrations/agentgateway-extmcp/cmd/agentgateway-extmcp@v0.0.5
-agentgateway-extmcp -config example/config.json -listen 127.0.0.1:4400
+agentgateway-extmcp -config example/config.json \
+  -tls-cert tls.crt -tls-key tls.key
 
-go run ./cmd/agentgateway-extmcp -config example/config.json -listen 127.0.0.1:4400
+go run ./cmd/agentgateway-extmcp -config example/config.json \
+  -listen 127.0.0.1:4400 -plaintext   # a gateway on the same host only
 ```
+
+The listener serves TLS, and the processor refuses to start without a
+key pair unless `-plaintext` asks for no TLS on a loopback address; see
+[TLS](#tls).
 
 Or as a container. Every release publishes a multi-arch image with
 SLSA build provenance, and this directory builds the same image. It
-listens on all interfaces inside the container and reads its
-configuration from `/etc/extmcp/config.json`:
+listens on all interfaces inside the container, over TLS, and reads its
+configuration from `/etc/extmcp/config.json` and its key pair from
+`/etc/extmcp/tls.crt` and `/etc/extmcp/tls.key`. Mount a directory
+holding all three, readable by the image's user, uid 65532:
 
 ```sh
-docker run --rm -p 4400:4400 -v "$PWD/example:/etc/extmcp:ro" \
+docker run --rm -p 4400:4400 -v "$PWD/extmcp:/etc/extmcp:ro" \
   ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.5
 gh attestation verify oci://ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.5 --owner sebastienrousseau
 
@@ -89,8 +97,9 @@ agentgateway-extmcp -completion fish > ~/.config/fish/completions/agentgateway-e
 ```
 
 Flags: `-config` (required), `-listen` (default `127.0.0.1:4400`; use
-`0.0.0.0:…` in a container), `-tls-cert` and `-tls-key` (serve over
-TLS; see below), `-reload-interval` (default off), `-max-bytes`
+`0.0.0.0:…` in a container), `-tls-cert` and `-tls-key` (required;
+see below), `-plaintext` (no TLS, loopback only; see below),
+`-reload-interval` (default off), `-max-bytes`
 (default 1 MiB per statement), `-fetch-timeout` (default 10s),
 `-log-level`, and `-completion` (print a shell completion script).
 Diagnostics are JSON lines on stderr.
@@ -102,9 +111,14 @@ table stays in service.
 
 ### TLS
 
-Without `-tls-cert` and `-tls-key` the gRPC listener is plaintext, which
-is right on loopback and nowhere else. Anywhere the gateway reaches the
-processor over a network, give it a certificate:
+The gRPC listener serves TLS. Without `-tls-cert` and `-tls-key` the
+processor refuses to start, and says so. (Until 0.0.5 it served
+plaintext instead; the [changelog](../../CHANGELOG.md) has the
+migration.)
+
+```text
+agentgateway-extmcp: no TLS key pair: give -tls-cert and -tls-key, or -plaintext to serve without TLS on a loopback -listen address (127.0.0.0/8, ::1 or localhost)
+```
 
 ```sh
 agentgateway-extmcp -config config.json -listen 0.0.0.0:4400 \
@@ -113,8 +127,8 @@ agentgateway-extmcp -config config.json -listen 0.0.0.0:4400 \
 
 - Both flags take PEM files: the certificate chain, leaf first, and its
   private key. Naming one without the other is refused at startup, as is
-  a key that does not match the certificate, so a processor that is
-  listening is one that is serving TLS.
+  a key that does not match the certificate or a file that is not
+  there, so a processor that is listening is one that is serving TLS.
 - The listener accepts TLS 1.2 and 1.3, nothing older. The cipher suites
   are the Go standard library's defaults.
 - The key pair is reloaded without a restart. `SIGHUP`, and each
@@ -129,9 +143,41 @@ agentgateway-extmcp -config config.json -listen 0.0.0.0:4400 \
   TLS. Restrict who can reach the port with the network, as for any
   internal gRPC service.
 
+**Plaintext, for a gateway on the same host.** `-plaintext` serves
+without TLS, and only on a loopback `-listen` address:
+
+```sh
+agentgateway-extmcp -config config.json -listen 127.0.0.1:4400 -plaintext
+```
+
+- The address must be a literal loopback IP (`127.0.0.0/8`, `::1`) or
+  the name `localhost`. A wildcard (`0.0.0.0`, `::`, or an empty host),
+  a routable address and every other host name are refused before
+  anything is bound. A host name is refused even when it resolves to
+  `127.0.0.1` today: what it resolves to is DNS's or `/etc/hosts`'s to
+  change, so it is no evidence the listener stays on this host, and the
+  check fails closed. `localhost` is checked again once bound: a
+  listener it did not put on loopback is closed, not served.
+- `-plaintext` beside `-tls-cert` or `-tls-key` is refused: one of them
+  would be ignored, and which one is not something to guess.
+- In a container, loopback is the container's own. `-plaintext` there
+  suits a sidecar that shares the gateway's network namespace, such as
+  a second container in the same Kubernetes pod; replace the image's
+  arguments to use it:
+
+  ```sh
+  docker run ... ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.5 \
+    -config /etc/extmcp/config.json -listen 127.0.0.1:4400 -plaintext
+  ```
+
 On the gateway side, the processor entry's `policies.backendTLS` makes
-agentgateway connect over TLS; `root` names the CA bundle to check the
-certificate against when it is not publicly trusted:
+agentgateway connect over TLS. Set it whenever the processor serves
+TLS: a gateway that does not negotiate TLS with it gets a gRPC error,
+which `failClosed` turns into a rejected call (`on_grpc_error` in
+`crates/agentgateway/src/mcp/guardrails/client.rs`). `root` names the
+CA bundle to check the certificate against when it is not publicly
+trusted, and `hostname` the name to verify and send as SNI when `host`
+is not one the certificate carries:
 
 ```yaml
         - kind: remote
@@ -140,7 +186,14 @@ certificate against when it is not publicly trusted:
           policies:
             backendTLS:
               root: /etc/agentgateway/extmcp-ca.pem
+              # hostname: extmcp.internal
 ```
+
+The fields are agentgateway's `LocalBackendTLS`
+(`crates/agentgateway/src/http/backendtls.rs`), and a `remote`
+processor's `policies` accept `backendTLS` (the `deser_local_config`
+test in `crates/agentgateway/src/mcp/guardrails/mod.rs`), at
+agentgateway commit `ff8685e`.
 
 ### Configuration
 
@@ -179,7 +232,9 @@ certificate against when it is not publicly trusted:
 ### Pointing agentgateway at it
 
 [`example/agentgateway.yaml`](example/agentgateway.yaml) is a complete
-local configuration. The relevant part:
+local configuration, for a processor on the same host started with
+`-listen 127.0.0.1:4400 -plaintext`; its comments show the
+`backendTLS` lines for a processor serving TLS. The relevant part:
 
 ```yaml
 mcp:
@@ -226,7 +281,8 @@ gate.
   write. The `attestation` package is the payload half of that pipeline
   on purpose.
 - **Client authentication.** The listener serves TLS with `-tls-cert`
-  and `-tls-key` but does not ask the gateway for a certificate. Its
+  and `-tls-key` (or, with `-plaintext`, nothing, on loopback only) but
+  does not ask the gateway for a certificate. Its
   answers carry no secret, only a decision and a score; restrict who can
   reach it with the network.
 - **Response inspection and request mutation.** Both are in the wire

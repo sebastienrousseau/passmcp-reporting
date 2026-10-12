@@ -217,7 +217,10 @@ func id(k Kind, parts ...string) string {
 
 // ServerID is the ID of the server at transport and endpoint. It uses the
 // same descriptor the attestation subject digest covers, so the ID's hex part
-// equals that digest.
+// equals that digest. It is always the sha256 entry, the one SubjectFor
+// writes: a statement may also carry sha512, and Validate accepts one that
+// carries only sha512, but a server's ID must not change with the
+// algorithms its latest statement happened to use.
 func ServerID(transport, endpoint string) string {
 	sub := attestation.SubjectFor(attestation.Target{Transport: transport, Endpoint: endpoint})
 	return string(KindServer) + ":" + sub.Digest["sha256"]
