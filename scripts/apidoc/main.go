@@ -58,27 +58,7 @@ func check(dirs []string) ([]string, error) {
 	}
 	var missing []string
 	for _, dir := range dirs {
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			return nil, err
-		}
-		fset := token.NewFileSet()
-		var files []*ast.File
-		for _, e := range entries {
-			name := e.Name()
-			if e.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
-				continue
-			}
-			f, err := parser.ParseFile(fset, filepath.Join(dir, name), nil, parser.ParseComments)
-			if err != nil {
-				return nil, err
-			}
-			files = append(files, f)
-		}
-		if len(files) == 0 {
-			return nil, fmt.Errorf("%s: no Go package", dir)
-		}
-		d, err := doc.NewFromFiles(fset, files, dir)
+		d, err := packageDoc(dir)
 		if err != nil {
 			return nil, err
 		}
@@ -86,6 +66,38 @@ func check(dirs []string) ([]string, error) {
 	}
 	sort.Strings(missing)
 	return missing, nil
+}
+
+// packageDoc parses the non-test Go files in dir, with their comments, into
+// the documentation pkgsite would render for the package.
+func packageDoc(dir string) (*doc.Package, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	fset := token.NewFileSet()
+	var files []*ast.File
+	for _, e := range entries {
+		if !isSource(e) {
+			continue
+		}
+		f, err := parser.ParseFile(fset, filepath.Join(dir, e.Name()), nil, parser.ParseComments)
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, f)
+	}
+	if len(files) == 0 {
+		return nil, fmt.Errorf("%s: no Go package", dir)
+	}
+	return doc.NewFromFiles(fset, files, dir)
+}
+
+// isSource reports whether a directory entry is a Go file that is part of
+// the package itself: not a directory and not a test file.
+func isSource(e os.DirEntry) bool {
+	name := e.Name()
+	return !e.IsDir() && strings.HasSuffix(name, ".go") && !strings.HasSuffix(name, "_test.go")
 }
 
 func undocumented(dir string, d *doc.Package) []string {

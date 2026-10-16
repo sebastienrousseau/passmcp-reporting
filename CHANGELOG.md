@@ -26,6 +26,15 @@ module, this repository tags first.
   in 1.26.9. The verifier packages use none of them. The README's
   toolchain badge and `DEVELOPMENT.md` follow.
 
+### Changed
+
+- **`scripts/apidoc`'s `check` is within the complexity ceilings**
+  ([#13](https://github.com/sebastienrousseau/passmcp-reporting/issues/13)).
+  Parsing a package directory moved into its own function, which takes
+  `check` from cognitive complexity 17 to within 15, and its line is
+  gone from `scripts/complexity-baseline.txt`. `make apidoc` reports
+  the same identifiers and errors as before.
+
 ## [0.0.6] — 2026-10-12
 
 ### Changed
