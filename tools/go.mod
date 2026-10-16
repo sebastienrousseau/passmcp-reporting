@@ -6,7 +6,7 @@
 
 module satellion.com/passmcp-reporting/tools
 
-go 1.26.8
+go 1.26.9
 
 tool (
 	golang.org/x/exp/cmd/gorelease

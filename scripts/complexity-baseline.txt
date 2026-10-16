@@ -5,7 +5,5 @@
 # Written by scripts/complexity.sh --update; it may only shrink.
 # <measure>	<path>	<function>	<value>
 gocognit	integrations/agentgateway-extmcp/processor/config.go	(*Config).Validate	18
-gocognit	integrations/agentgateway-extmcp/processor/policy.go	(Policy).Evaluate	16
-gocognit	scripts/apidoc/main.go	check	17
 gocognit	scripts/apidoc/main.go	specDoc	16
 gocyclo	attestation/verify.go	(*Statement).Validate	15

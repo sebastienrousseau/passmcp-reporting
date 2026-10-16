@@ -61,7 +61,7 @@ Install a release, or run it from a checkout of this
 directory:
 
 ```sh
-go install satellion.com/passmcp-reporting/integrations/agentgateway-extmcp/cmd/agentgateway-extmcp@v0.0.5
+go install satellion.com/passmcp-reporting/integrations/agentgateway-extmcp/cmd/agentgateway-extmcp@v0.0.7
 agentgateway-extmcp -config example/config.json \
   -tls-cert tls.crt -tls-key tls.key
 
@@ -82,8 +82,8 @@ holding all three, readable by the image's user, uid 65532:
 
 ```sh
 docker run --rm -p 4400:4400 -v "$PWD/extmcp:/etc/extmcp:ro" \
-  ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.5
-gh attestation verify oci://ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.5 --owner sebastienrousseau
+  ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.7
+gh attestation verify oci://ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.7 --owner sebastienrousseau
 
 docker build -t agentgateway-extmcp .   # or build it from this directory
 ```
@@ -166,7 +166,7 @@ agentgateway-extmcp -config config.json -listen 127.0.0.1:4400 -plaintext
   arguments to use it:
 
   ```sh
-  docker run ... ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.5 \
+  docker run ... ghcr.io/sebastienrousseau/passmcp-agentgateway-extmcp:0.0.7 \
     -config /etc/extmcp/config.json -listen 127.0.0.1:4400 -plaintext
   ```
 

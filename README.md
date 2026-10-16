@@ -19,7 +19,7 @@
   <a href="https://scorecard.dev/viewer/?uri=github.com/sebastienrousseau/passmcp-reporting"><img src="https://img.shields.io/ossf-scorecard/github.com/sebastienrousseau/passmcp-reporting?style=for-the-badge&label=OpenSSF%20Scorecard&logo=openssf" alt="OpenSSF Scorecard" /></a>
   <a href="https://www.bestpractices.dev/projects/15109"><img src="https://www.bestpractices.dev/projects/15109/badge" alt="OpenSSF Best Practices" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg?style=for-the-badge" alt="License: Apache-2.0" /></a>
-  <a href="https://github.com/sebastienrousseau/passmcp-reporting/blob/main/DEVELOPMENT.md#requirements"><img src="https://img.shields.io/badge/go-1.26.8%2B-93450a.svg?style=for-the-badge&logo=go" alt="Go 1.26.8+" /></a>
+  <a href="https://github.com/sebastienrousseau/passmcp-reporting/blob/main/DEVELOPMENT.md#requirements"><img src="https://img.shields.io/badge/go-1.26.9%2B-93450a.svg?style=for-the-badge&logo=go" alt="Go 1.26.9+" /></a>
 </p>
 
 <p align="center">
@@ -65,7 +65,7 @@
 ### As a Go library
 
 ```sh
-go get satellion.com/passmcp-reporting@v0.0.5
+go get satellion.com/passmcp-reporting@v0.0.7
 ```
 
 The module has no dependencies: adding it adds one line to `go.sum`.
@@ -137,7 +137,7 @@ it, and checking the signature, is the envelope's job — see
 
 ## The passmcp-reporting ecosystem
 
-Every component is released at **0.0.5** and moves in lockstep: one version across the family, released together ([docs/ecosystem.md](https://github.com/sebastienrousseau/passmcp/blob/main/docs/ecosystem.md)).
+Every component is released at **0.0.7** and moves in lockstep: one version across the family, released together ([docs/ecosystem.md](https://github.com/sebastienrousseau/passmcp/blob/main/docs/ecosystem.md)).
 
 | Component | Purpose | Use case |
 | :--- | :--- | :--- |

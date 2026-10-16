@@ -13,7 +13,54 @@ a passmcp release, whatever changed in this tree, and a release here with
 nothing in it is the version rule working. Because passmcp imports this
 module, this repository tags first.
 
-## [Unreleased]
+## [0.0.7] — 2026-10-16
+
+In lockstep with passmcp 0.0.7. The processor was not published at
+0.0.6 (that release run stopped at the missing CHANGELOG heading), so
+its image and module move from 0.0.5 to 0.0.7.
+
+### Security
+
+- **Go 1.26.9 is the minimum toolchain.** The `go` directive in
+  `go.mod`, the processor's `go.mod`, `go.work` and `tools/go.mod` named
+  1.26.8, the toolchain CI tests on. Under it, govulncheck reports nine
+  standard-library vulnerabilities the processor reaches, in `net/http`,
+  its HTTP/2 client, `net/textproto` and `crypto/tls` (GO-2026-6603,
+  -6605, -6607, -6608, -6610, -6611, -6612, -6613 and -6617), all fixed
+  in 1.26.9. The verifier packages use none of them. The README's
+  toolchain badge and `DEVELOPMENT.md` follow.
+- **The processor image builds on Go 1.27.2.** Its build stage was
+  `golang:1.27.1-bookworm`, whose standard library has the same
+  advisories, fixed in 1.27.2: govulncheck reports eight the processor
+  reaches under 1.27.1 and none under 1.27.2. The stage is
+  `golang:1.27.2-bookworm`, pinned by its current index digest.
+
+### Changed
+
+- **The processor links the v0.0.6 verifier.** Its `go.mod` still
+  required passmcp-reporting v0.0.5, so `go install` and the image
+  checked attestations with a verifier that recognises only sha256
+  subject digests and refused a valid statement carrying sha512
+  ([ADR 0003](docs/adr/0003-subject-digest-sha256-or-sha512.md)). It
+  now requires v0.0.6.
+
+- **`scripts/apidoc`'s `check` is within the complexity ceilings**
+  ([#13](https://github.com/sebastienrousseau/passmcp-reporting/issues/13)).
+  Parsing a package directory moved into its own function, which takes
+  `check` from cognitive complexity 17 to within 15, and its line is
+  gone from `scripts/complexity-baseline.txt`. `make apidoc` reports
+  the same identifiers and errors as before.
+
+- **The processor's `Policy.Evaluate` is within the complexity
+  ceilings**
+  ([#14](https://github.com/sebastienrousseau/passmcp-reporting/issues/14)).
+  The decision without a statement, the score minimum and the
+  failing-check reason are separate functions, which takes `Evaluate`
+  from cognitive complexity 16 to within 15; its line is gone from
+  `scripts/complexity-baseline.txt`. Every decision and reason is
+  unchanged.
+
+## [0.0.6] — 2026-10-12
 
 ### Changed
 
