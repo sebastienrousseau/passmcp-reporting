@@ -35,6 +35,15 @@ module, this repository tags first.
   gone from `scripts/complexity-baseline.txt`. `make apidoc` reports
   the same identifiers and errors as before.
 
+- **The processor's `Policy.Evaluate` is within the complexity
+  ceilings**
+  ([#14](https://github.com/sebastienrousseau/passmcp-reporting/issues/14)).
+  The decision without a statement, the score minimum and the
+  failing-check reason are separate functions, which takes `Evaluate`
+  from cognitive complexity 16 to within 15; its line is gone from
+  `scripts/complexity-baseline.txt`. Every decision and reason is
+  unchanged.
+
 ## [0.0.6] — 2026-10-12
 
 ### Changed
