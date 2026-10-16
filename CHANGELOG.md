@@ -33,6 +33,13 @@ module, this repository tags first.
 
 ### Changed
 
+- **The processor links the v0.0.6 verifier.** Its `go.mod` still
+  required passmcp-reporting v0.0.5, so `go install` and the image
+  checked attestations with a verifier that recognises only sha256
+  subject digests and refused a valid statement carrying sha512
+  ([ADR 0003](docs/adr/0003-subject-digest-sha256-or-sha512.md)). It
+  now requires v0.0.6.
+
 - **`scripts/apidoc`'s `check` is within the complexity ceilings**
   ([#13](https://github.com/sebastienrousseau/passmcp-reporting/issues/13)).
   Parsing a package directory moved into its own function, which takes
