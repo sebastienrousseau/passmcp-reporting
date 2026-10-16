@@ -13,7 +13,11 @@ a passmcp release, whatever changed in this tree, and a release here with
 nothing in it is the version rule working. Because passmcp imports this
 module, this repository tags first.
 
-## [Unreleased]
+## [0.0.7] — 2026-10-16
+
+In lockstep with passmcp 0.0.7. The processor was not published at
+0.0.6 (that release run stopped at the missing CHANGELOG heading), so
+its image and module move from 0.0.5 to 0.0.7.
 
 ### Security
 
