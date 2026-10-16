@@ -25,6 +25,11 @@ module, this repository tags first.
   -6605, -6607, -6608, -6610, -6611, -6612, -6613 and -6617), all fixed
   in 1.26.9. The verifier packages use none of them. The README's
   toolchain badge and `DEVELOPMENT.md` follow.
+- **The processor image builds on Go 1.27.2.** Its build stage was
+  `golang:1.27.1-bookworm`, whose standard library has the same
+  advisories, fixed in 1.27.2: govulncheck reports eight the processor
+  reaches under 1.27.1 and none under 1.27.2. The stage is
+  `golang:1.27.2-bookworm`, pinned by its current index digest.
 
 ### Changed
 
