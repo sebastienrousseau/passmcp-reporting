@@ -13,6 +13,19 @@ a passmcp release, whatever changed in this tree, and a release here with
 nothing in it is the version rule working. Because passmcp imports this
 module, this repository tags first.
 
+## [Unreleased]
+
+### Security
+
+- **Go 1.26.9 is the minimum toolchain.** The `go` directive in
+  `go.mod`, the processor's `go.mod`, `go.work` and `tools/go.mod` named
+  1.26.8, the toolchain CI tests on. Under it, govulncheck reports nine
+  standard-library vulnerabilities the processor reaches, in `net/http`,
+  its HTTP/2 client, `net/textproto` and `crypto/tls` (GO-2026-6603,
+  -6605, -6607, -6608, -6610, -6611, -6612, -6613 and -6617), all fixed
+  in 1.26.9. The verifier packages use none of them. The README's
+  toolchain badge and `DEVELOPMENT.md` follow.
+
 ## [0.0.6] — 2026-10-12
 
 ### Changed

@@ -12,7 +12,7 @@ file.
 
 | Tool | Version | Why |
 |---|---|---|
-| Go | 1.26.8 or later, the `go` directive in `go.mod` | `GOTOOLCHAIN=auto` downloads it; CI tests on it and on latest stable, and never pins a version separately |
+| Go | 1.26.9 or later, the `go` directive in `go.mod` | `GOTOOLCHAIN=auto` downloads it; CI tests on it and on latest stable, and never pins a version separately |
 | make | any | Task runner for everything below |
 
 Optional, only for the gate that uses it: `golangci-lint` (`make lint`),

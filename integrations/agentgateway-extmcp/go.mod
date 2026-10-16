@@ -1,6 +1,6 @@
 module satellion.com/passmcp-reporting/integrations/agentgateway-extmcp
 
-go 1.26.8
+go 1.26.9
 
 require (
 	google.golang.org/grpc v1.83.2
