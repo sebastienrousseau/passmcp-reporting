@@ -13,10 +13,10 @@ a passmcp release, whatever changed in this tree, and a release here with
 nothing in it is the version rule working. Because passmcp imports this
 module, this repository tags first.
 
-## [Unreleased]
+## [0.0.8] — 2026-10-18
 
-Work towards the family's 0.0.8. Version places stay at 0.0.7 until the
-family's release step.
+In lockstep with passmcp 0.0.8. The verifier packages are unchanged
+from 0.0.7; the processor's image and module move to 0.0.8.
 
 ### Changed
 
