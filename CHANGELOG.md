@@ -13,6 +13,21 @@ a passmcp release, whatever changed in this tree, and a release here with
 nothing in it is the version rule working. Because passmcp imports this
 module, this repository tags first.
 
+## [Unreleased]
+
+Work towards the family's 0.0.8. Version places stay at 0.0.7 until the
+family's release step.
+
+### Changed
+
+- **The agentgateway processor requires passmcp-reporting 0.0.7.** A
+  release cannot require itself, so 0.0.7 shipped the processor against
+  the 0.0.6 verifier (ADR 0002); with 0.0.7 tagged, the processor now
+  requires the newest release, as every other family member does. The
+  verifier packages are unchanged from 0.0.6 to 0.0.7, so attestations
+  are checked exactly as before. A build from this tree was never
+  affected: `go.work` uses the checkout.
+
 ## [0.0.7] — 2026-10-16
 
 In lockstep with passmcp 0.0.7. The processor was not published at
