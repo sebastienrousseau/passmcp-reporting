@@ -13,6 +13,31 @@ a passmcp release, whatever changed in this tree, and a release here with
 nothing in it is the version rule working. Because passmcp imports this
 module, this repository tags first.
 
+## [0.0.9] - 2026-11-12
+
+In lockstep with passmcp 0.0.9. The verifier packages are unchanged
+from 0.0.8; the processor's image and module move to 0.0.9.
+
+### Security
+
+- **The processor image builds on Go 1.27.3.** Its build stage moved
+  from `golang:1.27.2-bookworm` to `golang:1.27.3-bookworm`, pinned by
+  its index digest.
+- **The manual's build lock floors `certifi` at 2026.10.19.**
+  `docs/requirements.in` sets `certifi>=2026.10.19` and
+  `docs/requirements.txt` resolves `2026.10.23` (GHSA-6q48-6c7w-9gw2,
+  PYSEC-2026-4320). Neither the Go verifier module nor the processor
+  container image uses Python.
+
+### Changed
+
+- **The agentgateway processor requires passmcp-reporting 0.0.8 and
+  gRPC 1.85.0.** A release cannot require itself, so 0.0.8 shipped the
+  processor against the 0.0.7 verifier ([ADR 0002](docs/adr/0002-processor-nested-module-via-go-work.md));
+  it now requires `v0.0.8` and upgrades `google.golang.org/grpc` from
+  `1.83.2` to `1.85.0`. The verifier packages are unchanged from 0.0.6
+  to 0.0.9, so attestations are checked identically.
+
 ## [0.0.8] — 2026-10-18
 
 In lockstep with passmcp 0.0.8. The verifier packages are unchanged
