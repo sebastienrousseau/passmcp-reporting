@@ -13,6 +13,23 @@ a passmcp release, whatever changed in this tree, and a release here with
 nothing in it is the version rule working. Because passmcp imports this
 module, this repository tags first.
 
+## [0.0.10] - 2026-11-13
+
+In lockstep with passmcp 0.0.10, which brings the six Apache-2.0 language SDKs
+(`passmcp-sdk-go`, `passmcp-sdk-python`, `passmcp-sdk-java`, `passmcp-sdk-cpp`,
+`passmcp-sdk-typescript`, and `passmcp-sdk-rust`) into the released family
+stream alongside the existing nine repositories. The verifier packages are
+unchanged from 0.0.9; the processor's image and module move to 0.0.10.
+
+### Changed
+
+- **The agentgateway processor requires passmcp-reporting 0.0.9.** A release
+  cannot require itself (ADR 0002), so with 0.0.9 tagged on the module proxy
+  `integrations/agentgateway-extmcp/go.mod` moves from `v0.0.8` to `v0.0.9`.
+- **README family table lists all 15 lockstep repositories** at `0.0.10`,
+  including the six Apache-2.0 MCP SDKs that verify `mcp-evaluation/v1`
+  statements against this repository's schema and fixture.
+
 ## [0.0.9] - 2026-11-12
 
 In lockstep with passmcp 0.0.9. The verifier packages are unchanged
