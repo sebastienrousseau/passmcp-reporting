@@ -5,7 +5,7 @@ go 1.26.9
 require (
 	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12
-	satellion.com/passmcp-reporting v0.0.8
+	satellion.com/passmcp-reporting v0.0.9
 )
 
 require (
